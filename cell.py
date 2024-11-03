@@ -12,6 +12,8 @@ class Cell:
         self.dist = ' '
         self.tot = ' '
         
+        self.b8neighbors = -1
+        
     def get_r(self):
         return self.r
     
@@ -50,5 +52,11 @@ class Cell:
 
     def set_tot(self,tot):
         self.tot = tot
+        
+    def get_b8neighbors(self):
+        return self.b8neighbors
+    
+    def set_b8neighbor(self, b8neighbors):
+        self.b8neighbors = b8neighbors
     
     

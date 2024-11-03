@@ -1,9 +1,4 @@
-from queue import PriorityQueue
 import random
-
-from networkx import neighbors
-
-
 
 from ship import Ship
 
@@ -23,10 +18,13 @@ class Bot:
         self.ship = ship
         self.imgpath = 'bot1.png'
         
-        self.block3 = []
-        self.block2 = []
-        self.block1 = []
-        self.block0 = []
+        self.possibleloc = self.ship.getOpenCells()
+        self.visited = []
+        self.b8neighbors = None
+        
+    
+    def getStart(self):
+        return (self.r_start, self.c_start)
         
     def getloc(self):
         return (self.r, self.c)
@@ -35,13 +33,147 @@ class Bot:
         self.r = r 
         self.c = c
         
+    def get_b8neighbors(self):
+        return self.b8neighbors
+        
+    # def set_b8neighbors(self, b8neighbors):
+    #     self.b8neighbors = b8neighbors
+    
+    def createPossibleloc(self):
+        openCells = self.ship.getOpenCells()
+        for i in range(len(self.possibleloc)):
+            r, c = self.possibleloc[i]
+            openDirs = ''
+            if self.ship.get_cellval(r-1, c) == 'o':
+                openDirs+='u'
+            if self.ship.get_cellval(r, c-1) == 'o':
+                openDirs+='l'
+            if self.ship.get_cellval(r+1, c) == 'o':
+                openDirs+='d'
+            if self.ship.get_cellval(r, c+1) == 'o':
+                openDirs+='r'
+            self.possibleloc[i] = (r, c , openDirs)
+    
+    def senseNeighbors(self, r_disp, c_disp):
+        r_start,c_start = self.getStart()
+        r, c = (r_start+r_disp, c_start+c_disp)
+        # cell = self.ship.get_cell(r, c)
+        # return cell.get_b8neighbors()
+        
+        count = 0
+        if self.ship.get_cellval(r-1, c) == 'b':
+                count += 1
+        if self.ship.get_cellval(r, c-1) == 'b':
+            count += 1
+        if self.ship.get_cellval(r+1, c) == 'b':
+            count += 1
+        if self.ship.get_cellval(r, c+1) == 'b':
+            count += 1
+        if self.ship.get_cellval(r-1, c-1) == 'b':
+            count += 1
+        if self.ship.get_cellval(r-1, c+1) == 'b':
+            count += 1
+        if self.ship.get_cellval(r+1, c-1) == 'b':
+            count += 1
+        if self.ship.get_cellval(r+1, c+1) == 'b':
+            count += 1
+        self.b8neighbors = count
+        self.updatePossibleLocations(r_disp, c_disp)
+        
+    def updatePossibleLocations(self, r_disp, c_disp):
+        # loc = (r_disp, c_disp, self.b8neighbors)
+        # self.possibleloc.append(loc)
+        for r_map, c_map in self.possibleloc:
+            r = r_map + r_disp
+            c = c_map + c_disp
+            
+            map_cell = self.ship.get_cell(r, c)
+            if map_cell.get_b8neighbors()!= self.b8neighbors:
+                self.possibleloc.remove((r_map, c_map))
+        
+    def detectCommonDir(self):
+        common_dirs  = [0, 0, 0, 0]
+        # for r, c in self.possibleloc:
+        #     if self.ship.get_cellval(r-1, c) == 'o':
+        #         common_dirs[0] += 1
+        #     if self.ship.get_cellval(r, c-1) == 'o':
+        #         common_dirs[1] += 1
+        #     if self.ship.get_cellval(r+1, c) == 'o':
+        #         common_dirs[2] += 1
+        #     if self.ship.get_cellval(r, c+1) == 'o':
+        #         common_dirs[3] += 1
+        
+        for _, _, dirs in self.possibleloc:
+            if 'u' in dirs:
+                common_dirs[0] += 1
+            if 'l' in dirs:
+                common_dirs[1] += 1
+            if 'd' in dirs:
+                common_dirs[2] += 1
+            if 'r' in dirs:
+                common_dirs[3] += 1
+
+        
+        max_value = max(common_dirs)
+        max_index = common_dirs.index(max_value)
+        match max_index:
+            case 0:
+                return 'u'
+            case 1:
+                return 'l'
+            case 2:
+                return 'd'
+            case 3:
+                return 'r'
+            
+                
+        
+    def moveBot(self, dir):
+        moved = 0
+        (r, c ) = self.getloc()
+        if dir == 'u':
+            r_n = r+1
+        if dir == 'd':
+            r_n = r-1
+        if dir == 'l':
+            c_n = c+1
+        if dir == 'r':
+            c_n = c-1
+        # else:
+        #     return (0,0)
+        
+        if self.ship.get_cellval(r_n, c_n) == 'b':
+            for i in range(len(self.possibleloc)):
+                if dir in self.possibleloc[i][2]:
+                    self.possibleloc.pop(i)
+            # for r,c,dirs in range(len(self.possibleloc)):
+            #     if dir in dirs:
+            #         self.possibleloc.remove((r,c))
+            return False
+        else:
+            self.setloc(r_n,c_n)
+            for i in range(len(self.possibleloc)):
+                if dir not in self.possibleloc[i][2]:
+                    self.possibleloc.pop(i)
+            return (r-r_n, c-c_n)
+        
+        
     def getImgPath(self):
         return self.imgpath
         
     def getId(self):
         return self.id
     
+    def explore(self):
+        b8neighbors = self.senseNeighbors()
+        loc = (0,0, b8neighbors)
+        dirs = ['u', 'l', 'd', 'r']
+        while len(self.possibleloc)>1:
+            dir = random.choice(dirs)
+
+    
     def calcBlockList(self):
+        
         for r in range(0, self.ship.getSize()):
             for c in range(0, self.ship.getSize()):
                 neighbors = self.ship.countNeighbors( r, c, 'b')

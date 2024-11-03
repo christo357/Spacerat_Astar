@@ -21,15 +21,14 @@ class Ship:
     def getSize(self):
         return self.d
     
-    def get_q(self):
-        return self.q
+    def get_cell(self, r,c):
+        return self.grid[r][c]
+        
 
     def get_cellval(self, r, c):
         return self.grid[r][c].get_val()
     
-    def get_cell(self, r,c):
-        return self.grid[r][c]
-    
+
     def set_cellval(self,r,c, val):
         self.grid[r][c].set_val(val)
         
@@ -90,6 +89,38 @@ class Ship:
             if self.get_cellval(r, c+1) == celltype:
                 count += 1
         return count
+    
+    def countBlock8(self, r, c):
+        count = 0
+        if r>0:
+            if self.get_cellval(r-1, c) == 'b':
+                count += 1
+        if c>0:
+            if self.get_cellval(r, c-1) == 'b':
+                count += 1
+        if r<self.d-1:
+            if self.get_cellval(r+1, c) == 'b':
+                count += 1
+        if c<self.d-1:
+            if self.get_cellval(r, c+1) == 'b':
+                count += 1
+        if self.get_cellval(r-1, c-1) == 'b':
+            count += 1
+        if self.get_cellval(r-1, c+1) == 'b':
+            count += 1
+        if self.get_cellval(r+1, c-1) == 'b':
+            count += 1
+        if self.get_cellval(r+1, c+1) == 'b':
+            count += 1
+        return count
+    
+    def calcBlockNeighbours(self):
+        for r in range(1, self.d -1):
+            for c in range(1, self.d -1):
+                
+                if self.get_cellval(r,c) == 'o':
+                    cell = self.get_cell(r,c)
+                    cell.set_b8neighbor(self.countBlock8(r,c)) 
     
     def blockOuter(self):
         for r in range(0, self.d):
@@ -156,6 +187,7 @@ class Ship:
         
         self.blockOuter()
         self.displayNumbers()             #############
+        self.calcBlockNeighbours()
         self.displayShip()
         self.createSwitch()
         
@@ -192,7 +224,8 @@ class Ship:
         for r in range(0,self.d):
             print()
             for c in range(0, self.d):
-                print(self.grid[r][c].get_val(), end=' ')
+                # print(f"{self.grid[r][c].get_b8neighbors():<3}", end=' ')
+                print(f"{self.grid[r][c].get_val():<4}", end=' ')
         
         print(f'Switch: {self.getSwitchLoc()}')
         
@@ -209,5 +242,5 @@ class Ship:
                 if self.get_cellval(r,c) == 'b':
                     self.blocked.append((r,c))
     
-ship = Ship(30)
+ship = Ship(10)
 ship.createShip()
