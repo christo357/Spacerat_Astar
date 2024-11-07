@@ -14,7 +14,7 @@ class Ship:
         # self.fire = Fire(self.q)
         self.start_botloc = None
         self.botloc = [None, None, None, None]
-        self.switchloc = None
+        self.ratloc = None
         
         self.grid = [[Cell(row, col) for col in range(self.d)] for row in range(self.d)]
           
@@ -45,18 +45,18 @@ class Ship:
     def getBotLoc(self, i):
         return self.botloc[i]
         
-    def getSwitchLoc(self):
-        return self.switchloc
+    def getRatloc(self):
+        return self.ratloc
     
     def checkSwitch(self,r, c):
-        if self.switchloc == (r,c):
+        if self.ratloc == (r,c):
             return True
         else: 
             return False
     
-    def createSwitch(self):
+    def createRat(self):
         rs, cs = random.choice(self.open)
-        self.switchloc = (rs, cs)
+        self.ratloc = (rs, cs)
     
     def getNeighbors(self, r,c, celltype):
         neighbourList = []
@@ -189,15 +189,15 @@ class Ship:
         self.displayNumbers()             #############
         self.calcBlockNeighbours()
         self.displayShip()
-        self.createSwitch()
+        self.createRat()
         
     
     # def spreadFire(self):
     #     self.displayNumbers()
     #     possibleCells = self.getOpenCells()
     #     fireCells = self.getFireCells()
-    #     if self.getSwitchLoc() in possibleCells:
-    #         possibleCells.remove(self.getSwitchLoc())
+    #     if self.getRatloc() in possibleCells:
+    #         possibleCells.remove(self.getRatloc())
     #     for r_open, c_open in possibleCells:
     #         fireNeighbors = self.getNeighbors(r_open, c_open, 'f')
     #         act_fireNeighbors = [n for n in fireNeighbors if n in fireCells]
@@ -211,7 +211,7 @@ class Ship:
     def calcHeuristic(self):
         """Calculating the Manhattan distance
         """
-        r_dest, c_dest = self.getSwitchLoc()
+        r_dest, c_dest = self.getRatloc()
         d = self.getSize()
         for r in range(d):
             for c in range(d):
@@ -227,7 +227,7 @@ class Ship:
                 # print(f"{self.grid[r][c].get_b8neighbors():<3}", end=' ')
                 print(f"{self.grid[r][c].get_val():<4}", end=' ')
         
-        print(f'Switch: {self.getSwitchLoc()}')
+        print(f'Switch: {self.getRatloc()}')
         
     def displayNumbers(self):
         """update the list with cell values
@@ -241,6 +241,3 @@ class Ship:
                     self.open.append((r,c))
                 if self.get_cellval(r,c) == 'b':
                     self.blocked.append((r,c))
-    
-ship = Ship(10)
-ship.createShip()

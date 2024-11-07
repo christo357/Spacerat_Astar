@@ -9,11 +9,14 @@ class Bot:
         self.r = r
         self.c = c
         
-        self.r_k = None
-        self.c_k = None
-        
         self.r_start = r
         self.c_start = c
+        
+        self.r_k = None
+        self.c_k = None
+        self.r_disp = 0
+        self.c_disp = 0
+        
         
         self.ship = ship
         self.imgpath = 'bot1.png'
@@ -21,7 +24,8 @@ class Bot:
         self.possibleloc = self.ship.getOpenCells()
         self.visited = []
         self.b8neighbors = None
-        
+        self.movdirs =''
+        self.movdisp = []
     
     def getStart(self):
         return (self.r_start, self.c_start)
@@ -32,33 +36,72 @@ class Bot:
     def setloc(self, r, c):
         self.r = r 
         self.c = c
+    
+    def updateknownloc(self):
+        self.r_k, self.c_k,_ = self.possibleloc[0]
+        print(f"Known loc: {self.r_k, self.c_k}")
+        # self.r = self.r_k + self.r_disp
+        # self.c = self.c_k + self.c_disp
+        
+    def invalidposition(self, r, c):
+        if 0<r<self.ship.getSize() and 0<c<self.ship.getSize():
+            return False
+        else:
+            return True
         
     def get_b8neighbors(self):
+        """Returns  the number of blocked cells out of  8 neighbours
+
+        Returns:
+            _type_: _description_
+        """
         return self.b8neighbors
         
+    def get_possibleloclen(self):
+        return len(self.possibleloc)
     # def set_b8neighbors(self, b8neighbors):
     #     self.b8neighbors = b8neighbors
     
+    def openDirs(self, r,c ):
+        openDirs = ''
+        if self.ship.get_cellval(r-1, c) == 'o':
+            openDirs+='u'
+        if self.ship.get_cellval(r, c-1) == 'o':
+            openDirs+='l'
+        if self.ship.get_cellval(r+1, c) == 'o':
+            openDirs+='d'
+        if self.ship.get_cellval(r, c+1) == 'o':
+            openDirs+='r'
+        return openDirs
+    
+    
     def createPossibleloc(self):
+        '''updates the list possibleloc with all possible locations that bot can move. 
+        Also stores the directions of their open neighbours.
+        structure of each element: (r, c , <possible dirs>)'''
         openCells = self.ship.getOpenCells()
         for i in range(len(self.possibleloc)):
             r, c = self.possibleloc[i]
-            openDirs = ''
-            if self.ship.get_cellval(r-1, c) == 'o':
-                openDirs+='u'
-            if self.ship.get_cellval(r, c-1) == 'o':
-                openDirs+='l'
-            if self.ship.get_cellval(r+1, c) == 'o':
-                openDirs+='d'
-            if self.ship.get_cellval(r, c+1) == 'o':
-                openDirs+='r'
+            openDirs = self.openDirs(r,c)
+            # if self.ship.get_cellval(r-1, c) == 'o':
+            #     openDirs+='u'
+            # if self.ship.get_cellval(r, c-1) == 'o':
+            #     openDirs+='l'
+            # if self.ship.get_cellval(r+1, c) == 'o':
+            #     openDirs+='d'
+            # if self.ship.get_cellval(r, c+1) == 'o':
+            #     openDirs+='r'
             self.possibleloc[i] = (r, c , openDirs)
     
-    def senseNeighbors(self, r_disp, c_disp):
-        r_start,c_start = self.getStart()
-        r, c = (r_start+r_disp, c_start+c_disp)
-        # cell = self.ship.get_cell(r, c)
-        # return cell.get_b8neighbors()
+    def senseNeighbors(self):
+        """senses the number of blocked neighbors. And calls Updatepossibleloc
+
+        Args:
+            r_disp (_type_): displacement of bot from initial row
+            c_disp (_type_): displacement of bot from initial column
+        """
+        # r_start,c_start = self.getStart()
+        r, c = (self.r_start+self.r_disp, self.c_start+self.c_disp)
         
         count = 0
         if self.ship.get_cellval(r-1, c) == 'b':
@@ -78,21 +121,24 @@ class Bot:
         if self.ship.get_cellval(r+1, c+1) == 'b':
             count += 1
         self.b8neighbors = count
-        self.updatePossibleLocations(r_disp, c_disp)
+        self.updatePossibleLocations()
+        # return 1
         
-    def updatePossibleLocations(self, r_disp, c_disp):
+    def updatePossibleLocations(self):
         # loc = (r_disp, c_disp, self.b8neighbors)
         # self.possibleloc.append(loc)
-        for r_map, c_map in self.possibleloc:
-            r = r_map + r_disp
-            c = c_map + c_disp
+        
+        for r_map, c_map, _ in self.possibleloc:
+            r = r_map + self.r_disp
+            c = c_map + self.c_disp
             
             map_cell = self.ship.get_cell(r, c)
             if map_cell.get_b8neighbors()!= self.b8neighbors:
-                self.possibleloc.remove((r_map, c_map))
+                self.possibleloc = [item for item in self.possibleloc if not (item[0]==r and item[1]==c)]
         
     def detectCommonDir(self):
-        common_dirs  = [0, 0, 0, 0]
+        """Detect the most common open direction in the map the bot can move"""
+        # common_dirs  = [0, 0, 0, 0]
         # for r, c in self.possibleloc:
         #     if self.ship.get_cellval(r-1, c) == 'o':
         #         common_dirs[0] += 1
@@ -102,18 +148,19 @@ class Bot:
         #         common_dirs[2] += 1
         #     if self.ship.get_cellval(r, c+1) == 'o':
         #         common_dirs[3] += 1
-        
+        all_dirs = ''
         for _, _, dirs in self.possibleloc:
-            if 'u' in dirs:
-                common_dirs[0] += 1
-            if 'l' in dirs:
-                common_dirs[1] += 1
-            if 'd' in dirs:
-                common_dirs[2] += 1
-            if 'r' in dirs:
-                common_dirs[3] += 1
+            all_dirs += dirs
+            # if 'u' in dirs:
+            #     common_dirs[0] += 1
+            # if 'l' in dirs:
+            #     common_dirs[1] += 1
+            # if 'd' in dirs:
+            #     common_dirs[2] += 1
+            # if 'r' in dirs:
+            #     common_dirs[3] += 1
 
-        
+        return random.choice(all_dirs)
         max_value = max(common_dirs)
         max_index = common_dirs.index(max_value)
         match max_index:
@@ -131,32 +178,83 @@ class Bot:
     def moveBot(self, dir):
         moved = 0
         (r, c ) = self.getloc()
+        print("Dir: ", dir)
+        r_disp, c_disp = (0,0)
         if dir == 'u':
-            r_n = r+1
+            r_disp, c_disp = (-1,0)
+            # r_n = r+1
+            # c_n = c
         if dir == 'd':
-            r_n = r-1
+            r_disp, c_disp = (1,0)
+            # r_n = r-1
+            # c_n = c
         if dir == 'l':
-            c_n = c+1
+            r_disp, c_disp = (0,-1)
+            # r_n = r
+            # c_n = c+1
         if dir == 'r':
-            c_n = c-1
+            r_disp, c_disp = (0,1)
+            # r_n = r
+            # c_n = c-1
         # else:
         #     return (0,0)
+        print(f"Possibleloc: {self.possibleloc}")
+        print("len: ", len(self.possibleloc))
         
-        if self.ship.get_cellval(r_n, c_n) == 'b':
-            for i in range(len(self.possibleloc)):
-                if dir in self.possibleloc[i][2]:
-                    self.possibleloc.pop(i)
+        if self.ship.get_cellval(r+r_disp, c+c_disp) == 'b':
+            print("blocked")
+            for r1,c1,dir1 in self.possibleloc:
+                # print("If: ", i)
+                r2 = r1+self.r_disp
+                c2 = c1+self.c_disp
+                if self.invalidposition(r2,c2):
+                    self.possibleloc.remove((r1,c1, dir1))
+                else:
+                    dir2 = self.openDirs(r2,c2)
+                    if dir in dir2:
+                        self.possibleloc.remove((r1,c1, dir1))
+                        # self.possibleloc.pop(i)
             # for r,c,dirs in range(len(self.possibleloc)):
             #     if dir in dirs:
             #         self.possibleloc.remove((r,c))
-            return False
+            return (0, 0)
         else:
-            self.setloc(r_n,c_n)
-            for i in range(len(self.possibleloc)):
-                if dir not in self.possibleloc[i][2]:
-                    self.possibleloc.pop(i)
-            return (r-r_n, c-c_n)
-        
+            
+            self.movdirs+= dir
+            self.movdisp.append((r_disp, c_disp))
+            
+            for r1,c1,dir1 in self.possibleloc:
+                # print("If: ", i)
+                r2 = r1+self.r_disp
+                c2 = c1+self.c_disp
+                
+                if self.invalidposition(r2,c2):
+                    self.possibleloc.remove((r1,c1, dir1))
+                else:
+                    dir2 = self.openDirs(r2,c2)
+                    if dir not in dir2:
+                        self.possibleloc.remove((r1,c1, dir1))
+            # print("len: ", len(self.possibleloc))
+            # for r1,c1,dir1 in self.possibleloc:
+            #     # print("It: ", i)
+            #     # print(f"Possibleloc: {self.possibleloc[i]}")
+            #     if dir not in dir1:
+            #         self.possibleloc.remove((r1,c1, dir1))
+            # self.r_disp = self.r_start-r_n
+            # self.c_disp = self.c_start-c_n
+            self.setloc(r+r_disp, c+c_disp)
+            self.movdirs+= dir
+            self.movdisp.append((r_disp, c_disp))
+            self.r_disp += r_disp
+            self.c_disp += c_disp
+            print("tot_ disp: ", self.r_disp, self.c_disp)
+            print(self.getloc())
+            return (r_disp, c_disp)
+
+    # def updateMap(self):
+    #     for disp, dir in zip(self.disp, self.dir):
+    #         r_disp, c_disp = disp
+    #         for 
         
     def getImgPath(self):
         return self.imgpath
@@ -172,19 +270,19 @@ class Bot:
             dir = random.choice(dirs)
 
     
-    def calcBlockList(self):
+    # def calcBlockList(self):
         
-        for r in range(0, self.ship.getSize()):
-            for c in range(0, self.ship.getSize()):
-                neighbors = self.ship.countNeighbors( r, c, 'b')
-                if neighbors == 3: 
-                    self.block3.append((r,c))
-                elif neighbors == 2: 
-                    self.block2.append((r,c))
-                elif neighbors == 1: 
-                    self.block1.append((r,c))
-                else:
-                    self.block0.append((r,c))
+    #     for r in range(0, self.ship.getSize()):
+    #         for c in range(0, self.ship.getSize()):
+    #             neighbors = self.ship.countNeighbors( r, c, 'b')
+    #             if neighbors == 3: 
+    #                 self.block3.append((r,c))
+    #             elif neighbors == 2: 
+    #                 self.block2.append((r,c))
+    #             elif neighbors == 1: 
+    #                 self.block1.append((r,c))
+    #             else:
+    #                 self.block0.append((r,c))
     
     
     
