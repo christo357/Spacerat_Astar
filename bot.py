@@ -1,10 +1,15 @@
+from os import remove
 import random
+import math
+impo
 
+
+from cell import Cell
 from ship import Ship
 
 
 class Bot:
-    def __init__(self,  ship , r, c):
+    def __init__(self,  ship:Ship , r:int, c:int, alpha:float):
         self.id = 1
         self.r = r
         self.c = c
@@ -20,8 +25,11 @@ class Bot:
         
         self.ship = ship
         self.imgpath = 'bot1.png'
+        self.alpha = alpha
         
+        self.openCells = self.ship.getOpenCells()
         self.possibleloc = self.ship.getOpenCells()
+        # self.openCellProb = []
         self.visited = []
         self.b8neighbors = None
         self.movdirs =''
@@ -36,15 +44,26 @@ class Bot:
     def setloc(self, r, c):
         self.r = r 
         self.c = c
+        
+    def getKnownloc(self):
+        return (self.r_k , self.c_k)
     
     def updateknownloc(self):
         self.r_k, self.c_k,_ = self.possibleloc[0]
+    
         print(f"Known loc: {self.r_k, self.c_k}")
+        print(f"Start loc : {self.r_start, self.c_start}")
+        self.r_k += self.r_disp
+        self.c_k += self.c_disp
+        print(f"Known loc: {self.r_k, self.c_k}")
+        print(f"curr loc : {self.r, self.c}")
         # self.r = self.r_k + self.r_disp
         # self.c = self.c_k + self.c_disp
         
+    
+        
     def invalidposition(self, r, c):
-        if 0<r<self.ship.getSize() and 0<c<self.ship.getSize():
+        if 0<r<self.ship.getSize()-1 and 0<c<self.ship.getSize()-1:
             return False
         else:
             return True
@@ -127,17 +146,31 @@ class Bot:
     def updatePossibleLocations(self):
         # loc = (r_disp, c_disp, self.b8neighbors)
         # self.possibleloc.append(loc)
-        
-        for r_map, c_map, _ in self.possibleloc:
+        remove_list = []
+
+        for r_map, c_map, dir_map in self.possibleloc:
             r = r_map + self.r_disp
             c = c_map + self.c_disp
             
-            map_cell = self.ship.get_cell(r, c)
-            if map_cell.get_b8neighbors()!= self.b8neighbors:
-                self.possibleloc = [item for item in self.possibleloc if not (item[0]==r and item[1]==c)]
-        
+            if self.invalidposition(r,c):
+                    remove_list.append((r_map, c_map,"i"))
+                    self.possibleloc.remove((r_map,c_map, dir_map))
+            else:
+                map_cell = self.ship.get_cell(r, c)
+                if map_cell.get_b8neighbors()!= self.b8neighbors:
+                    remove_list.append((r_map, c_map))
+                    self.possibleloc = [item for item in self.possibleloc if not (item[0]==r_map and item[1]==c_map)]
+        print(f"Neighbours removed in sensing: {remove_list}")
+        print(f"possibleloc after sensing: {self.possibleloc}")
+            
     def detectCommonDir(self):
         """Detect the most common open direction in the map the bot can move"""
+        all_dirs = 'uldr'
+        for _, _, dirs in self.possibleloc:
+            all_dirs += dirs
+
+        return random.choice(all_dirs)
+
         # common_dirs  = [0, 0, 0, 0]
         # for r, c in self.possibleloc:
         #     if self.ship.get_cellval(r-1, c) == 'o':
@@ -148,9 +181,7 @@ class Bot:
         #         common_dirs[2] += 1
         #     if self.ship.get_cellval(r, c+1) == 'o':
         #         common_dirs[3] += 1
-        all_dirs = ''
-        for _, _, dirs in self.possibleloc:
-            all_dirs += dirs
+        
             # if 'u' in dirs:
             #     common_dirs[0] += 1
             # if 'l' in dirs:
@@ -160,18 +191,17 @@ class Bot:
             # if 'r' in dirs:
             #     common_dirs[3] += 1
 
-        return random.choice(all_dirs)
-        max_value = max(common_dirs)
-        max_index = common_dirs.index(max_value)
-        match max_index:
-            case 0:
-                return 'u'
-            case 1:
-                return 'l'
-            case 2:
-                return 'd'
-            case 3:
-                return 'r'
+        # max_value = max(common_dirs)
+        # max_index = common_dirs.index(max_value)
+        # match max_index:
+        #     case 0:
+        #         return 'u'
+        #     case 1:
+        #         return 'l'
+        #     case 2:
+        #         return 'd'
+        #     case 3:
+        #         return 'r'
             
                 
         
@@ -203,37 +233,45 @@ class Bot:
         
         if self.ship.get_cellval(r+r_disp, c+c_disp) == 'b':
             print("blocked")
+            remove_blocked = []
             for r1,c1,dir1 in self.possibleloc:
                 # print("If: ", i)
                 r2 = r1+self.r_disp
                 c2 = c1+self.c_disp
                 if self.invalidposition(r2,c2):
+                    remove_blocked.append((r1,c1, "i"))
                     self.possibleloc.remove((r1,c1, dir1))
                 else:
                     dir2 = self.openDirs(r2,c2)
                     if dir in dir2:
+                        remove_blocked.append((r1,c1))
                         self.possibleloc.remove((r1,c1, dir1))
                         # self.possibleloc.pop(i)
             # for r,c,dirs in range(len(self.possibleloc)):
             #     if dir in dirs:
             #         self.possibleloc.remove((r,c))
+            print(f"Removed in blocking: {remove_blocked}")
             return (0, 0)
         else:
             
             self.movdirs+= dir
             self.movdisp.append((r_disp, c_disp))
-            
+            remove_dir = []
             for r1,c1,dir1 in self.possibleloc:
                 # print("If: ", i)
                 r2 = r1+self.r_disp
                 c2 = c1+self.c_disp
                 
                 if self.invalidposition(r2,c2):
+                    remove_dir.append((r1, c1,"i"))
                     self.possibleloc.remove((r1,c1, dir1))
                 else:
                     dir2 = self.openDirs(r2,c2)
                     if dir not in dir2:
+                        remove_dir.append((r1, c1))
                         self.possibleloc.remove((r1,c1, dir1))
+                        
+            print(f"Removed in dir: {remove_dir}")
             # print("len: ", len(self.possibleloc))
             # for r1,c1,dir1 in self.possibleloc:
             #     # print("It: ", i)
@@ -262,13 +300,172 @@ class Bot:
     def getId(self):
         return self.id
     
-    def explore(self):
-        b8neighbors = self.senseNeighbors()
-        loc = (0,0, b8neighbors)
-        dirs = ['u', 'l', 'd', 'r']
-        while len(self.possibleloc)>1:
-            dir = random.choice(dirs)
+    # def explore(self):
+    #     b8neighbors = self.senseNeighbors()
+    #     loc = (0,0, b8neighbors)
+    #     dirs = ['u', 'l', 'd', 'r']
+    #     while len(self.possibleloc)>1:
+    #         dir = random.choice(dirs)
 
+    def findPosition(self):
+        self.createPossibleloc()
+    # run_simulation(my_ship, r_b, c_b, bot_count, simulationPath, resultPath, stepPath, fileName)
+        loc_found = 0
+        sensed = 0  
+        t= 0 
+        while loc_found==0 and t<200:
+            
+            print("\nCurr_positon; ", self.getloc())
+            t +=1
+            if sensed == 0:
+                self.senseNeighbors() 
+                sensed = 1
+            else:
+                dir = self.detectCommonDir()
+                r_disp, c_disp = self.moveBot(dir)
+                print(f'T{t}: {r_disp, c_disp}')
+                sensed = 0
+            if self.get_possibleloclen() ==1:
+                loc_found = 1
+                self.updateknownloc()
+                
+        if (self.r_k, self.c_k) != self.getloc():
+            print("known location differ from original")
+            return False
+        else:
+            return True
+        
+    # def createOpenCellProb(self):
+    #     for r,c in self.openCells:
+    #         self.openCellProb.append((r,c,0))
+    
+    def calcManhattan(self, loc1, loc2):
+        """Return manhattan distance b/w 2 cell location
+
+        Args:
+            loc1 (tuple): (int, int)
+            loc2 (tuple): (int, int)
+
+        Returns:
+            int: _description_
+        """
+       
+        return abs(loc1[0]-loc2[0]) + abs(loc1[0]-loc2[1])
+    
+    def pingProbability(self, loc1 , loc2):
+        d = self.calcManhattan(loc1, loc2)
+        prob = math.exp(-self.alpha * (d - 1))
+        return prob
+    
+    # Function to generate a "ping" or "no ping" based on the probability
+    def generate_ping(self,bot_position, rat_position, alpha):
+        prob_ping = self.pingProbability(bot_position, rat_position, alpha)
+        return random.rand() < prob_ping  # True if "ping", False if "no ping"
+
+        
+    # def updateCellProb(self, currloc, ping_recieved):
+    #     """P(cell) = P(cell/curr_cell). p(curr_cell) 
+        
+    #     """
+    #     r_curr, c_curr = currloc
+    #     # ratloc = self.ship.getRatloc()
+    #     # ping_curr = self.pingProbability(currloc, ratloc)
+    #     # print("curr_ping: ", ping_curr)
+    #     beta = 0.9
+    #     for r,c in self.openCells:
+    #         # p_cell = self.pingProbability(currloc, (r,c) ) * ping_curr * beta
+    #         # print(p_cell)
+    #         cell = self.ship.get_cell(r, c)
+    #         if cell.get_val()!='b':
+    #             cell_prob = cell.get_prob()+p_cell
+    #             # print(cell_prob)
+    #             cell.set_prob(cell_prob)
+        
+    def updateCellProb(self, currloc, ping_recieved):
+        """P(cell) = P(cell/curr_cell). p(curr_cell) 
+        
+        """
+        r_curr, c_curr = currloc
+        # ratloc = self.ship.getRatloc()
+        # ping_curr = self.pingProbability(currloc, ratloc)
+        # print("curr_ping: ", ping_curr)
+        sum = 0
+        for r,c in self.openCells:
+            prob_ping = self.pingProbability(currloc, (r,c) ) 
+            likelihood = prob_ping if ping_received else (1 - prob_ping)
+            new_prob = likelihood * belief[r,c]
+            sum +=  new_prob
+            # print(p_cell)
+            cell = self.ship.get_cell(r, c)
+            if cell.get_val()!='b':
+                cell_prob = cell.get_prob()* likelihood
+                # print(cell_prob)
+                sum +=  cell_prob
+                # cell.set_prob(cell_prob)
+        for z in self.openCells:
+            cell = self.ship.get_cell(r,c)
+    
+    def getNeighborProb(self, curr_loc):
+        r,c = curr_loc
+        neighbors = []
+        probs = []
+        n_loc = [(0,1), (0, -1), (1, 0), (-1, 0)]
+        for r_disp, c_disp in n_loc:
+            r_n = r+r_disp
+            c_n = c+c_disp
+            cell = self.ship.get_cell(r_n, c_n)
+            # print(cell.get_val)
+            if cell.get_val()!="b":
+                prob = cell.get_prob()
+                neighbors.append((r_n, c_n))
+                probs.append(prob)
+        return (neighbors, probs)
+    
+    def findRat(self):
+        loc_rat = self.ship.getRatloc()
+        print(f"RatLoc: {loc_rat}")
+        with open("rat_results.txt","w") as f:
+                f.write(f"Ratloc : {loc_rat}\n")
+        t=0
+        rat_found = 0
+        while rat_found ==0 : #and t<1000:
+            t+=1
+            r, c = self.getloc()
+            ping_received = generate_ping((r,c), rat_position)
+            # update probabilities of the cells
+            self.updateCellProb(currloc= (r,c), ping_received)
+            # select a neighbor by weighted random sampling
+            neighbors, probs = self.getNeighborProb(curr_loc=(r,c))
+            # print(f"Neighbours: {neighbors}")
+            # print(f"probabs: {probs}")
+            next = random.choices(neighbors, weights= probs, k=1)
+            r_n, c_n = next[0]
+            print(f"New Loc: {next}   {t}")
+            self.setloc(r_n, c_n)
+            
+            with open("rat_results.txt","a") as f:
+                f.write(f"timestep t: {t}\n")
+                for r in range(0, self.ship.getSize()):
+                    for c in range(0, self.ship.getSize()):
+                        cell = self.ship.get_cell(r,c)
+                        prob = cell.get_prob()
+                        if (r,c) == loc_rat:
+                            f.write(f"R")
+                        elif (r,c) == (r_n, c_n):
+                            f.write(f"B")
+                        else:
+                            f.write(f"{prob:.4f} ")
+                    f.write("\n")
+                    
+                f.write("\n\n")
+            if loc_rat == (r_n, c_n):
+                print("Rat found")
+                rat_found = 1
+        
+        
+       
+        
+    
     
     # def calcBlockList(self):
         
@@ -303,7 +500,65 @@ class Bot:
     
     
     
+    import numpy as np
+
+# Parameters
+alpha = 0.1  # Sensitivity of the detector
+grid_size = (30, 30)  # Ship's grid dimensions
+
+# Initialize prior belief that the rat is equally likely to be in any cell
+belief = np.full(grid_size, 1.0 / (grid_size[0] * grid_size[1]))
+
+# # Function to calculate Manhattan distance between two cells
+# def manhattan_distance(cell1, cell2):
+#     return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
+
+# Function to get the probability of a "ping" based on distance
+def ping_probability(bot_position, rat_position, alpha):
+    distance = manhattan_distance(bot_position, rat_position)
+    return np.exp(-alpha * (distance - 1))
+
+# Function to generate a "ping" or "no ping" based on the probability
+def generate_ping(bot_position, rat_position, alpha):
+    prob_ping = ping_probability(bot_position, rat_position, alpha)
+    return np.random.rand() < prob_ping  # True if "ping", False if "no ping"
+
+# Function to update the belief based on whether a ping was received
+def update_belief(belief, bot_position, ping_received, alpha):
+    new_belief = np.zeros_like(belief)
+
+    # Update each cell's probability based on "ping" or "no ping"
+    for x in range(grid_size[0]):
+        for y in range(grid_size[1]):
+            rat_position = (x, y)
+            prob_ping = ping_probability(bot_position, rat_position, alpha)
+            likelihood = prob_ping if ping_received else (1 - prob_ping)
+            new_belief[x, y] = likelihood * belief[x, y]
+
+    # Normalize the belief to ensure it sums to 1
+    total_belief = np.sum(new_belief)
+    if total_belief > 0:
+        new_belief /= total_belief
+    else:
+        # If all probabilities are zero, reset to uniform distribution
+        new_belief.fill(1.0 / (grid_size[0] * grid_size[1]))
     
+    return new_belief
+
+# Example usage
+# Initial positions (for demonstration purposes)
+bot_position = (15, 15)  # Assume bot starts at the center of the grid
+rat_position = (20, 20)  # Assume rat starts at some random position
+
+# Generate "ping" or "no ping" based on the current bot and rat positions
+ping_received = generate_ping(bot_position, rat_position, alpha)
+
+# Update belief based on the ping result
+belief = update_belief(belief, bot_position, ping_received, alpha)
+
+# Output the updated belief grid
+print("Updated belief grid:")
+print(belief)
     
     
     
