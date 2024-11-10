@@ -13,6 +13,7 @@ class Cell:
         self.tot = ' '
         
         self.b8neighbors = -1
+        self.prob = 0
         
     def get_r(self):
         return self.r
@@ -33,6 +34,20 @@ class Cell:
         return self.parent[i]
     
     
+    # 
+        
+    def get_b8neighbors(self):
+        return self.b8neighbors
+    
+    def set_b8neighbor(self, b8neighbors):
+        self.b8neighbors = b8neighbors
+        
+    def get_prob(self):
+        return self.prob
+    
+    def set_prob(self, prob):
+        self.prob = prob
+    
     def get_h(self):
         return self.h
 
@@ -52,11 +67,3 @@ class Cell:
 
     def set_tot(self,tot):
         self.tot = tot
-        
-    def get_b8neighbors(self):
-        return self.b8neighbors
-    
-    def set_b8neighbor(self, b8neighbors):
-        self.b8neighbors = b8neighbors
-    
-    

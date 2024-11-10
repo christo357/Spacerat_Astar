@@ -6,11 +6,14 @@ import re
 from time import sleep  # To add delay between steps
 from cell import Cell
 # from fire import Fire
+
+from logger import Logger
 from ship import Ship
 import bot
 
 # Constants
 SIZE = 40
+ALPHA = .1
 CELL_SIZE = 15
 GRID_WIDTH = SIZE
 GRID_HEIGHT = SIZE
@@ -63,25 +66,9 @@ my_ship.createShip()
 r_b, c_b = random.choice(my_ship.getOpenCells())
 print(f"initial bot loc : {r_b, c_b}")
 my_ship.start_botloc =  (r_b, c_b)
-my_bot = bot.Bot(my_ship, r_b, c_b)
-my_bot.createPossibleloc()
-    # run_simulation(my_ship, r_b, c_b, bot_count, simulationPath, resultPath, stepPath, fileName)
-loc_found = 0
-sensed = 0  
-t= 0 
-while loc_found==0 and t<50:
-    
-    print("\nCurr_positon; ", my_bot.getloc())
-    t +=1
-    if sensed == 0:
-        my_bot.senseNeighbors() 
-        sensed = 1
-    else:
-        dir = my_bot.detectCommonDir()
-        r_disp, c_disp = my_bot.moveBot(dir)
-        print(f'T{t}: {r_disp, c_disp}')
-        sensed = 0
-    if my_bot.get_possibleloclen() ==1:
-        loc_found = 1
-        my_bot.updateknownloc()
-    
+my_bot = bot.Bot(my_ship, r_b, c_b,alpha=ALPHA)
+getPos = my_bot.findPosition()
+
+if getPos:
+    print("FINDING RAT")
+    my_bot.findRat()

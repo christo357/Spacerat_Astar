@@ -1,11 +1,15 @@
 from os import remove
+from queue import PriorityQueue
 import random
 import math
-impo
+
+# from networkx import neighbors
+import numpy as np
 
 
 from cell import Cell
 from ship import Ship
+from astar import Astar
 
 
 class Bot:
@@ -24,12 +28,14 @@ class Bot:
         
         
         self.ship = ship
+        self.shipSize = self.ship.getSize()
         self.imgpath = 'bot1.png'
         self.alpha = alpha
         
         self.openCells = self.ship.getOpenCells()
         self.possibleloc = self.ship.getOpenCells()
-        # self.openCellProb = []
+        self.possibleRat = self.ship.getOpenCells()
+        self.belief = np.zeros((self.shipSize, self.shipSize))
         self.visited = []
         self.b8neighbors = None
         self.movdirs =''
@@ -335,32 +341,43 @@ class Bot:
         else:
             return True
         
+    def calcHeuristic(self,dest):
+        """Calculating the Manhattan distance
+        """
+        r_dest, c_dest = dest
+        d = self.shipSize()
+        for r in range(d):
+            for c in range(d):
+                if self.ship.get_cellval(r,c) != 'b': 
+                    h = abs(r_dest-r) + abs(c_dest-c)
+                    self.ship.get_cell(r, c).set_h(h) 
+        
     # def createOpenCellProb(self):
     #     for r,c in self.openCells:
     #         self.openCellProb.append((r,c,0))
     
+    def initializeBelief(self):
+        b = 1.0/(len(self.openCells))
+        for r in range(self.shipSize):
+            for c in range(self.shipSize):
+                cell = self.ship.get_cell(r,c)
+                if cell.get_val() == 'b':
+                    self.belief[r,c] =0
+                else:
+                    self.belief[r,c] = b
+    
     def calcManhattan(self, loc1, loc2):
-        """Return manhattan distance b/w 2 cell location
-
-        Args:
-            loc1 (tuple): (int, int)
-            loc2 (tuple): (int, int)
-
-        Returns:
-            int: _description_
-        """
-       
-        return abs(loc1[0]-loc2[0]) + abs(loc1[0]-loc2[1])
+       return abs(loc1[0]-loc2[0]) + abs(loc1[0]-loc2[1])
     
     def pingProbability(self, loc1 , loc2):
         d = self.calcManhattan(loc1, loc2)
-        prob = math.exp(-self.alpha * (d - 1))
-        return prob
+        return math.exp(-self.alpha * (d - 1))
+       
     
     # Function to generate a "ping" or "no ping" based on the probability
-    def generate_ping(self,bot_position, rat_position, alpha):
-        prob_ping = self.pingProbability(bot_position, rat_position, alpha)
-        return random.rand() < prob_ping  # True if "ping", False if "no ping"
+    def generate_ping(self,bot_position, rat_position):
+        prob_ping = self.pingProbability(bot_position, rat_position)
+        return random.random() < prob_ping  # True if "ping", False if "no ping"
 
         
     # def updateCellProb(self, currloc, ping_recieved):
@@ -381,29 +398,41 @@ class Bot:
     #             # print(cell_prob)
     #             cell.set_prob(cell_prob)
         
-    def updateCellProb(self, currloc, ping_recieved):
+    def updateCellProb(self, currloc, ping_received):
         """P(cell) = P(cell/curr_cell). p(curr_cell) 
         
         """
         r_curr, c_curr = currloc
-        # ratloc = self.ship.getRatloc()
-        # ping_curr = self.pingProbability(currloc, ratloc)
-        # print("curr_ping: ", ping_curr)
         sum = 0
+        # if not ping_received:
+        #     self.belief[r_curr, c_curr] = 0
+        new_belief = np.zeros_like(self.belief)
         for r,c in self.openCells:
-            prob_ping = self.pingProbability(currloc, (r,c) ) 
+            prob_ping = self.pingProbability(currloc, (r,c))
             likelihood = prob_ping if ping_received else (1 - prob_ping)
-            new_prob = likelihood * belief[r,c]
-            sum +=  new_prob
+            new_belief[r,c] = likelihood * self.belief[r,c]
+            
+        total_belief = np.sum(new_belief)
+        if total_belief>0:
+            new_belief /= total_belief
+        # else:
+        #     new_belief.fill(1.0/(self.shipSize* self.shipSize))
+            
+        return new_belief
+            # prob_ping = self.pingProbability(currloc, (r,c) ) 
+            # likelihood = prob_ping if ping_received else (1 - prob_ping)
+            # new_prob = likelihood * belief[r,c]
+            # sum +=  new_prob
             # print(p_cell)
-            cell = self.ship.get_cell(r, c)
-            if cell.get_val()!='b':
-                cell_prob = cell.get_prob()* likelihood
-                # print(cell_prob)
-                sum +=  cell_prob
-                # cell.set_prob(cell_prob)
-        for z in self.openCells:
-            cell = self.ship.get_cell(r,c)
+            
+        #     cell = self.ship.get_cell(r, c)
+        #     if cell.get_val()!='b':
+        #         cell_prob = cell.get_prob()* likelihood
+        #         # print(cell_prob)
+        #         sum +=  cell_prob
+        #         # cell.set_prob(cell_prob)
+        # for z in self.openCells:
+        #     cell = self.ship.get_cell(r,c)
     
     def getNeighborProb(self, curr_loc):
         r,c = curr_loc
@@ -416,149 +445,170 @@ class Bot:
             cell = self.ship.get_cell(r_n, c_n)
             # print(cell.get_val)
             if cell.get_val()!="b":
-                prob = cell.get_prob()
+                prob = self.belief[r_n, c_n]
                 neighbors.append((r_n, c_n))
-                probs.append(prob)
+                probs.append(float(prob))
         return (neighbors, probs)
+    
+    def updateProbList(self):
+        probs = []
+        for r,c in self.possibleRat:
+            probs.append(float(self.belief[r,c]))
+        return probs
     
     def findRat(self):
         loc_rat = self.ship.getRatloc()
         print(f"RatLoc: {loc_rat}")
         with open("rat_results.txt","w") as f:
                 f.write(f"Ratloc : {loc_rat}\n")
+                f.write(f"Bot Pos: {self.getloc()}\n")
         t=0
         rat_found = 0
-        while rat_found ==0 : #and t<1000:
+        self.initializeBelief()
+        a_star = 0
+        r, c= self.getloc()
+        while rat_found ==0 and t<1000:
             t+=1
-            r, c = self.getloc()
-            ping_received = generate_ping((r,c), rat_position)
+            # r, c = self.getloc()
+            
+            prob_list = self.updateProbList()
+            max_i = prob_list.index(max(prob_list))
+            dest = self.possibleRat[max_i]
+            if (r, c) != loc_rat:
+                if (r,c) in self.possibleRat:
+                    self.belief[r,c] = 0
+                    self.possibleRat.remove((r,c))
+            # if loc_rat == (r, c):
+            #     print("Rat found")
+            #     rat_found = 1
+            #     break
+            # else:
+            #     self.possibleRat.remove((r,c))
+            
+            ping_received = self.generate_ping((r,c), loc_rat)
             # update probabilities of the cells
-            self.updateCellProb(currloc= (r,c), ping_received)
+            self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+            
+            prob_list = self.updateProbList()
+            print(f"\nT: {t}, dest: {dest}")
+            astar = Astar((r,c), dest, self.possibleRat,self.ship)
+            path = astar.findPath()
+            
+            for loc in path:
+                t += 1
+                print(f"Bot position: {loc}")
+                if loc==dest:
+                    print(f"Rat Found at: {loc} in {t} timesteps")
+                    rat_found = 1
+                    break
+                else:
+                    self.possibleRat.remove(loc)
+                    self.belief[r,c] = 0
+                    ping_received = self.generate_ping((r,c), loc_rat)
+                    # update probabilities of the cells
+                    self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+                    
+                    prob_list = self.updateProbList()
+                    
+                    
+            
+                with open("rat_results.txt","a") as f:
+                    f.write(f"timestep t: {t}\n")
+                    for r in range(0, self.ship.getSize()):
+                        for c in range(0, self.ship.getSize()):
+                            # cell = self.ship.get_cell(r,c)
+                            prob = self.belief[r,c]
+                            if (r,c) == loc_rat:
+                                f.write(f"R")
+                            elif (r,c) == loc:
+                                f.write(f"B")
+                            else:
+                                f.write(f"{prob:.4f} ")
+                        f.write("\n")
+                        
+                    f.write("\n\n")
             # select a neighbor by weighted random sampling
-            neighbors, probs = self.getNeighborProb(curr_loc=(r,c))
+            # neighbors, probs = self.getNeighborProb(curr_loc=(r,c))
             # print(f"Neighbours: {neighbors}")
             # print(f"probabs: {probs}")
-            next = random.choices(neighbors, weights= probs, k=1)
-            r_n, c_n = next[0]
-            print(f"New Loc: {next}   {t}")
-            self.setloc(r_n, c_n)
+            # if sum(probs)==0:
+            #     next = random.choice(neighbors)
+            # else:
+            #     next = random.choices(neighbors, weights= probs, k=1)
+            # r_n, c_n = next[0]
+            # print(f"New Loc: {next}   {t}")
+            # self.setloc(r_n, c_n)
             
-            with open("rat_results.txt","a") as f:
-                f.write(f"timestep t: {t}\n")
-                for r in range(0, self.ship.getSize()):
-                    for c in range(0, self.ship.getSize()):
-                        cell = self.ship.get_cell(r,c)
-                        prob = cell.get_prob()
-                        if (r,c) == loc_rat:
-                            f.write(f"R")
-                        elif (r,c) == (r_n, c_n):
-                            f.write(f"B")
-                        else:
-                            f.write(f"{prob:.4f} ")
-                    f.write("\n")
-                    
-                f.write("\n\n")
-            if loc_rat == (r_n, c_n):
-                print("Rat found")
-                rat_found = 1
+          
+            # if loc_rat == (r_n, c_n):
+            #     print("Rat found")
+            #     rat_found = 1
         
-        
-       
-        
-    
-    
-    # def calcBlockList(self):
-        
-    #     for r in range(0, self.ship.getSize()):
-    #         for c in range(0, self.ship.getSize()):
-    #             neighbors = self.ship.countNeighbors( r, c, 'b')
-    #             if neighbors == 3: 
-    #                 self.block3.append((r,c))
-    #             elif neighbors == 2: 
-    #                 self.block2.append((r,c))
-    #             elif neighbors == 1: 
-    #                 self.block1.append((r,c))
-    #             else:
-    #                 self.block0.append((r,c))
+           
     
     
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    import numpy as np
+#     import numpy as np
 
-# Parameters
-alpha = 0.1  # Sensitivity of the detector
-grid_size = (30, 30)  # Ship's grid dimensions
+# # Parameters
+# alpha = 0.1  # Sensitivity of the detector
+# grid_size = (30, 30)  # Ship's grid dimensions
 
-# Initialize prior belief that the rat is equally likely to be in any cell
-belief = np.full(grid_size, 1.0 / (grid_size[0] * grid_size[1]))
+# # Initialize prior belief that the rat is equally likely to be in any cell
+# belief = np.full(grid_size, 1.0 / (grid_size[0] * grid_size[1]))
 
-# # Function to calculate Manhattan distance between two cells
-# def manhattan_distance(cell1, cell2):
-#     return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
+# # # Function to calculate Manhattan distance between two cells
+# # def manhattan_distance(cell1, cell2):
+# #     return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
 
-# Function to get the probability of a "ping" based on distance
-def ping_probability(bot_position, rat_position, alpha):
-    distance = manhattan_distance(bot_position, rat_position)
-    return np.exp(-alpha * (distance - 1))
+# # Function to get the probability of a "ping" based on distance
+# def ping_probability(bot_position, rat_position, alpha):
+#     distance = manhattan_distance(bot_position, rat_position)
+#     return np.exp(-alpha * (distance - 1))
 
-# Function to generate a "ping" or "no ping" based on the probability
-def generate_ping(bot_position, rat_position, alpha):
-    prob_ping = ping_probability(bot_position, rat_position, alpha)
-    return np.random.rand() < prob_ping  # True if "ping", False if "no ping"
+# # Function to generate a "ping" or "no ping" based on the probability
+# def generate_ping(bot_position, rat_position, alpha):
+#     prob_ping = ping_probability(bot_position, rat_position, alpha)
+#     return np.random.rand() < prob_ping  # True if "ping", False if "no ping"
 
-# Function to update the belief based on whether a ping was received
-def update_belief(belief, bot_position, ping_received, alpha):
-    new_belief = np.zeros_like(belief)
+# # Function to update the belief based on whether a ping was received
+# def update_belief(belief, bot_position, ping_received, alpha):
+#     new_belief = np.zeros_like(belief)
 
-    # Update each cell's probability based on "ping" or "no ping"
-    for x in range(grid_size[0]):
-        for y in range(grid_size[1]):
-            rat_position = (x, y)
-            prob_ping = ping_probability(bot_position, rat_position, alpha)
-            likelihood = prob_ping if ping_received else (1 - prob_ping)
-            new_belief[x, y] = likelihood * belief[x, y]
+#     # Update each cell's probability based on "ping" or "no ping"
+#     for x in range(grid_size[0]):
+#         for y in range(grid_size[1]):
+#             rat_position = (x, y)
+#             prob_ping = ping_probability(bot_position, rat_position, alpha)
+#             likelihood = prob_ping if ping_received else (1 - prob_ping)
+#             new_belief[x, y] = likelihood * belief[x, y]
 
-    # Normalize the belief to ensure it sums to 1
-    total_belief = np.sum(new_belief)
-    if total_belief > 0:
-        new_belief /= total_belief
-    else:
-        # If all probabilities are zero, reset to uniform distribution
-        new_belief.fill(1.0 / (grid_size[0] * grid_size[1]))
+#     # Normalize the belief to ensure it sums to 1
+#     total_belief = np.sum(new_belief)
+#     if total_belief > 0:
+#         new_belief /= total_belief
+#     else:
+#         # If all probabilities are zero, reset to uniform distribution
+#         new_belief.fill(1.0 / (grid_size[0] * grid_size[1]))
     
-    return new_belief
+#     return new_belief
 
-# Example usage
-# Initial positions (for demonstration purposes)
-bot_position = (15, 15)  # Assume bot starts at the center of the grid
-rat_position = (20, 20)  # Assume rat starts at some random position
+# # Example usage
+# # Initial positions (for demonstration purposes)
+# bot_position = (15, 15)  # Assume bot starts at the center of the grid
+# rat_position = (20, 20)  # Assume rat starts at some random position
 
-# Generate "ping" or "no ping" based on the current bot and rat positions
-ping_received = generate_ping(bot_position, rat_position, alpha)
+# # Generate "ping" or "no ping" based on the current bot and rat positions
+# ping_received = generate_ping(bot_position, rat_position, alpha)
 
-# Update belief based on the ping result
-belief = update_belief(belief, bot_position, ping_received, alpha)
+# # Update belief based on the ping result
+# belief = update_belief(belief, bot_position, ping_received, alpha)
 
-# Output the updated belief grid
-print("Updated belief grid:")
-print(belief)
+# # Output the updated belief grid
+# print("Updated belief grid:")
+# print(belief)
     
     
     
@@ -572,124 +622,4 @@ print(belief)
     
     
     
-    # def calcHeuristic(self):
-    #     """Calculating the Manhattan distance
-    #     """
-    #     r_dest, c_dest = self.ship.getSwitchLoc()
-    #     d = self.ship.getSize()
-    #     for r in range(d):
-    #         for c in range(d):
-    #             if self.ship.get_cellval(r,c) != 'b': 
-    #                 h = abs(r_dest-r) + abs(c_dest-c)
-    #                 self.ship.get_cell(r, c).set_h(h) 
-                
-    # def tracePath(self, r, c):
-    #     path = []
-        
-    #     while r is not None and c is not None: 
-    #         cell = self.ship.get_cell(r, c)
-    #         path.append((cell.get_r(), cell.get_c()))
-    #         r, c = cell.get_parent(0)
-            
-    #     path.reverse()
-    #     print(f'PATH: {path}')
-    #     if len(path)>1:
-    #         return path[1]
-    #     else:
-    #         return -1
-        
-    
-    # def getPossibleCells(self):
-    #     fStartCell = self.ship.fire.getStartCell()
-    #     possibleCells = self.ship.getOpenCells() + self.ship.getFireCells()
-    #     possibleCells.remove(fStartCell)
-        
-    #     return possibleCells
-        
-    # def update_priority(self, pq, old_item, new_p1):
-    #     temp_list = []
-    #     edit_fringe = False
-        
-    #     # Temporarily store elements and remove the one to update
-    #     while not pq.empty():
-    #         p_old, item = pq.get()
-            
-    #         if item == old_item:
-    #             # Update the priority of the target item
-    #             if new_p1< p_old:
-    #                 temp_list.append((new_p1, item))
-    #                 edit_fringe = True
-    #             else:
-    #                 temp_list.append((p_old, item))
-    #         else:
-    #             temp_list.append((p_old, item))
-        
-    #     # Reinsert all elements back into the queue
-    #     for item in temp_list:
-    #         pq.put(item)   
-    #     return edit_fringe
-        
-    # def move(self, ship):
-    #     self.ship = ship
-    #     r_bot, c_bot = self.getloc()
-    #     r_dest, c_dest = self.ship.getSwitchLoc()
-    #     if (r_bot, c_bot) == (r_dest, c_dest):
-    #         return False
-    #     visited = []
-    #     fringe = PriorityQueue()
-    #     fringe_items = []
-    #     possibleCells = self.getPossibleCells()
-       
-    #     cell_start = self.ship.get_cell(r_bot, c_bot)
-    #     cell_start.set_dist(0)
-    #     p_start = cell_start.get_h() #+ cell_start.get_dist()
-    #     cell_start.set_tot(p_start)
-    #     fringe.put((p_start,  (r_bot, c_bot)))
-    #     fringe_items.append(( r_bot, c_bot))
-        
-        
-    #     while not fringe.empty():
-    #         p1_curr,  curr = fringe.get()
-    #         fringe_items.pop(0)
-            
-    #         r_curr = curr[0]
-    #         c_curr = curr[1]
-    #         visited.append((r_curr, c_curr))
-            
-    #         cell_curr =  self.ship.get_cell(r_curr, c_curr)
-    #         if (r_curr, c_curr) == (r_dest, c_dest):
-    #             r_next, c_next = self.tracePath(r_dest, c_dest)
-    #             self.setloc(r_next, c_next)
-    #             return True
-            
-    #         cost_to_neighbour = cell_curr.get_tot() + 1
-            
-    #         o_neighbours = self.ship.getNeighbours(r_curr, c_curr, 'o') + self.ship.getNeighbours(r_curr, c_curr, 'f')
-    #         possible_neighbours = [neighbour for neighbour in o_neighbours if neighbour in possibleCells]
-    #         neighbours = [neighbour for neighbour in possible_neighbours if neighbour not in visited]
-            
-    #         for neighbour in neighbours:
-    #             r_child, c_child = neighbour
-    #             cell_child = self.ship.get_cell(r_child, c_child)
-    #             if neighbour in fringe_items:
-    #                 if cost_to_neighbour< cell_child.get_dist():
-    #                     cell_child.set_dist(cost_to_neighbour)
-    #                     cell_child.set_parent(r_curr, c_curr , 0)
-                        
-    #             else:
-    #                 cell_child.set_dist(cost_to_neighbour)
-    #                 cell_child.set_parent(r_curr, c_curr, 0)
-                
-    #             p1 = cell_child.get_dist() + cell_child.get_h()
-    #             if (r_child, c_child) in fringe_items: 
-    #                 fringe_edited = self.update_priority(fringe, (r_child, c_child), p1)
-    #                 if fringe_edited: 
-    #                     cell_child.set_tot(p1)
-    #             else:
-    #                 fringe.put((p1, (r_child, c_child)))
-    #                 cell_child.set_tot(p1)
-    #                 fringe_items.append((r_child, c_child))
-    #     print("!!!FAILURE IN BOT-1 A-STAR !!!!!!")
-    #     return False
-        
-        
+ 

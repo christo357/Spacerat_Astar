@@ -21,7 +21,7 @@ class Ship:
     def getSize(self):
         return self.d
     
-    def get_cell(self, r,c):
+    def get_cell(self, r,c) -> Cell:
         return self.grid[r][c]
         
 
@@ -33,6 +33,7 @@ class Ship:
         self.grid[r][c].set_val(val)
         
     def getOpenCells(self):
+        self.displayNumbers()
         return self.open
     
    
@@ -190,6 +191,7 @@ class Ship:
         self.calcBlockNeighbours()
         self.displayShip()
         self.createRat()
+        
         
     
     # def spreadFire(self):
