@@ -7,12 +7,15 @@ from time import sleep  # To add delay between steps
 from cell import Cell
 # from fire import Fire
 
+
+
 from logger import Logger
 from ship import Ship
-import bot
+from ui import ShipInterface
+import bot1_m as bot
 
 # Constants
-SIZE = 40
+SIZE = 30
 ALPHA = .1
 CELL_SIZE = 15
 GRID_WIDTH = SIZE
@@ -60,13 +63,18 @@ def log_grid_state(ship, timestep, bot_count, resultPath):
         file.write(f"Bot {i+1}: ({bot_row}, {bot_col})\n")
         file.write("-" * 40 + "\n")
         
+pygame.init()
+window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption("Space Rat Simulation")
+
 
 my_ship = Ship(SIZE)
 my_ship.createShip()
+interface1 = ShipInterface( SIZE, CELL_SIZE, 1, my_ship.getOpenCells())
 r_b, c_b = random.choice(my_ship.getOpenCells())
 print(f"initial bot loc : {r_b, c_b}")
 my_ship.start_botloc =  (r_b, c_b)
-my_bot = bot.Bot(my_ship, r_b, c_b,alpha=ALPHA)
+my_bot = bot.Bot(my_ship, r_b, c_b,alpha=ALPHA, interface=interface1)
 getPos = my_bot.findPosition()
 
 if getPos:

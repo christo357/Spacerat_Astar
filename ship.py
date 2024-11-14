@@ -48,16 +48,22 @@ class Ship:
         
     def getRatloc(self):
         return self.ratloc
-    
-    def checkSwitch(self,r, c):
+   
+    def createRat(self):
+        rs, cs = random.choice(self.open)
+        self.ratloc = (rs, cs)
+     
+    def checkRat(self,r, c):
         if self.ratloc == (r,c):
             return True
         else: 
             return False
-    
-    def createRat(self):
-        rs, cs = random.choice(self.open)
-        self.ratloc = (rs, cs)
+        
+    def moveRat(self):
+        r, c = self.ratloc
+        moveCells = self.getNeighbors(r, c, 'o')    
+        moveCells.append((r,c))
+        self.ratloc = random.choice(moveCells)
     
     def getNeighbors(self, r,c, celltype):
         neighbourList = []
@@ -131,16 +137,33 @@ class Ship:
         for r in [0, self.d-1]:
             for c in range(0, self.d-1):
                 self.set_cellval(r, c, 'b')
+                
+    def getInnerBlockedNeighbours(self, r,c):
+        # def getNeighbors(self, r,c, celltype):
+        neighbourList = []
+        if r>1:
+            if self.get_cellval(r-1, c) == 'b':
+                neighbourList.append((r-1, c) )
+        if c>1:
+            if self.get_cellval(r, c-1) == 'b':
+                neighbourList.append((r, c-1) )
+        if r<self.d-2:
+            if self.get_cellval(r+1, c) == 'b':
+                neighbourList.append((r+1, c) )
+        if c<self.d-2:
+            if self.get_cellval(r, c+1) == 'b':
+                neighbourList.append((r, c+1) )
+        return neighbourList
         
     def createShip(self):
         # open a random blocked blocked
-        r_init = random.randint(0, self.d-1)
-        c_init = random.randint(0, self.d-1)
+        r_init = random.randint(1, self.d-2)
+        c_init = random.randint(1, self.d-2)
         self.set_cellval(r_init,c_init, 'o')
         # self.grid[r_init][c_init].set_val('o') 
         
-        for r in range(0,self.d):
-            for c in range(0,self.d):
+        for r in range(1,self.d-1):
+            for c in range(1,self.d-1):
                 if self.grid[r][c].get_val() == 'b':
                     if self.countNeighbors(r,c, 'o')==1 :
                         self.blocked1.append((r,c))
@@ -151,14 +174,14 @@ class Ship:
             self.set_cellval(r_new, c_new, 'o')
             
             self.blocked1 = []
-            for r in range(0,self.d):
-                for c in range(0,self.d):
+            for r in range(1,self.d-1):
+                for c in range(1,self.d-1):
                     if self.get_cellval(r,c) == 'b':
                         if self.countNeighbors(r,c, 'o')==1 :
                             self.blocked1.append((r,c))
                 
-        for r in range(0,self.d):
-            for c in range(0,self.d):
+        for r in range(1,self.d-1):
+            for c in range(1,self.d-1):
                 if self.get_cellval(r,c) == 'o':
                     if self.countNeighbors(r,c, 'o')==1 :
                         self.deadend.append((r,c))
@@ -172,7 +195,9 @@ class Ship:
         while ((cell_opened < open_count) and len(self.deadend)>0):
             dead_neighbors = []
             for r,c in self.deadend:
-                dead_neighbors.extend(self.getNeighbors(r,c,'b')) 
+                dead_neighbors.extend(self.getInnerBlockedNeighbours(r,c)) 
+                # for cell in dead_neighbors:
+                #     if cell
             (r_new, c_new) = random.choice(dead_neighbors)
             # print(f"r, c{r_new}, {c_new}")
             self.set_cellval(r_new, c_new, 'o')
@@ -180,13 +205,13 @@ class Ship:
             
             # print(cell_opened, open_count)
             self.deadend = []
-            for r in range(0,self.d):
-                for c in range(0,self.d):
+            for r in range(1,self.d-1):
+                for c in range(1,self.d-1):
                     if self.get_cellval(r,c) == 'o':
                         if self.countNeighbors(r,c, 'o')==1 :
                             self.deadend.append((r,c))
         
-        self.blockOuter()
+        # self.blockOuter()
         self.displayNumbers()             #############
         self.calcBlockNeighbours()
         self.displayShip()
