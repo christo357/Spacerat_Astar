@@ -3,7 +3,6 @@ from queue import PriorityQueue
 import random
 import math
 
-# from networkx import neighbors
 import numpy as np
 
 
@@ -42,6 +41,8 @@ class Bot:
         self.b8neighbors = None
         self.movdirs =''
         self.movdisp = []
+        
+        
     
     def getStart(self):
         return (self.r_start, self.c_start)
@@ -65,8 +66,6 @@ class Bot:
         self.c_k += self.c_disp
         print(f"Known loc: {self.r_k, self.c_k}")
         print(f"curr loc : {self.r, self.c}")
-        # self.r = self.r_k + self.r_disp
-        # self.c = self.c_k + self.c_disp
         
     
         
@@ -86,8 +85,6 @@ class Bot:
         
     def get_possibleloclen(self):
         return len(self.possibleloc)
-    # def set_b8neighbors(self, b8neighbors):
-    #     self.b8neighbors = b8neighbors
     
     def openDirs(self, r,c ):
         openDirs = ''
@@ -329,41 +326,11 @@ class Bot:
         total_belief = np.sum(new_belief)
         if total_belief>0:
             new_belief /= total_belief
-        # else:
-        #     new_belief.fill(1.0/(self.shipSize* self.shipSize))
+        
             
         return new_belief
-            # prob_ping = self.pingProbability(currloc, (r,c) ) 
-            # likelihood = prob_ping if ping_received else (1 - prob_ping)
-            # new_prob = likelihood * belief[r,c]
-            # sum +=  new_prob
-            # print(p_cell)
-            
-        #     cell = self.ship.get_cell(r, c)
-        #     if cell.get_val()!='b':
-        #         cell_prob = cell.get_prob()* likelihood
-        #         # print(cell_prob)
-        #         sum +=  cell_prob
-        #         # cell.set_prob(cell_prob)
-        # for z in self.openCells:
-        #     cell = self.ship.get_cell(r,c)
-    
-    # def getNeighborProb(self, curr_loc):
-    #     r,c = curr_loc
-    #     neighbors = []
-    #     probs = []
-    #     n_loc = [(0,1), (0, -1), (1, 0), (-1, 0)]
-    #     for r_disp, c_disp in n_loc:
-    #         r_n = r+r_disp
-    #         c_n = c+c_disp
-    #         cell = self.ship.get_cell(r_n, c_n)
-    #         # print(cell.get_val)
-    #         if cell.get_val()!="b":
-    #             prob = self.belief[r_n, c_n]
-    #             neighbors.append((r_n, c_n))
-    #             probs.append(float(prob))
-    #     return (neighbors, probs)
-    
+           
+   
     def updateProbList(self):
         probs = []
         for r,c in self.possibleRat:
@@ -376,31 +343,60 @@ class Bot:
         with open("rat_results.txt","w") as f:
                 f.write(f"Ratloc : {loc_rat}\n")
                 f.write(f"Bot Pos: {self.getloc()}\n")
+                
+        # Divide the ship into 9 regions (3x3 grid of 10x10 cells each)
+        regions = {
+            0: [(i, j) for i in range(0, 10) for j in range(0, 10)],
+            1: [(i, j) for i in range(0, 10) for j in range(10, 20)],
+            2: [(i, j) for i in range(0, 10) for j in range(20, 30)],
+            3: [(i, j) for i in range(10, 20) for j in range(0, 10)],
+            4: [(i, j) for i in range(10, 20) for j in range(10, 20)],
+            5: [(i, j) for i in range(10, 20) for j in range(20, 30)],
+            6: [(i, j) for i in range(20, 30) for j in range(0, 10)],
+            7: [(i, j) for i in range(20, 30) for j in range(10, 20)],
+            8: [(i, j) for i in range(20, 30) for j in range(20, 30)]
+        }
+        current_region = None
+                
         t=0
         rat_found = 0
         self.initializeBelief()
+        
         a_star = 0
         r, c= self.getloc()
         while rat_found ==0 and t<1000:
             t+=1
             # r, c = self.getloc()
+            region_probs = {}      
             
             prob_list = self.updateProbList()
-            max_i = prob_list.index(max(prob_list))
-            dest = self.possibleRat[max_i]
             
+            # find the total probability for each region
+            for region, cells in regions.items():
+                region_probs[region] = sum(self.belief[i, j] for i, j in cells)
+                
+            max_region = max(region_probs, key = region_probs.get)
+            # If the max probability region is different from the current, switch to the new region
+            if current_region is None or region_probs[max_region] > region_probs[current_region]:
+                current_region = max_region
+            
+            region_cells = regions[current_region]
+            cell_probs = [(self.belief[i, j], (i, j)) for i, j in region_cells]
+            cell_probs.sort(reverse=True)  # Sort by probability descending
+            dest = cell_probs[0][1]  # Cell with the highest probability in the current region
+        
+            
+            # max_i = prob_list.index(max(prob_list))
+            # dest = self.possibleRat[max_i]
+            r, c = self.getloc()
             if (r, c) != loc_rat:
                 if (r,c) in self.possibleRat:
                     self.belief[r,c] = 0
                     self.possibleRat.remove((r,c))
-            # if loc_rat == (r, c):
-            #     print("Rat found")
-            #     rat_found = 1
-            #     break
-            # else:
-            #     self.possibleRat.remove((r,c))
+
             
             ping_received = self.generate_ping((r,c), loc_rat)
+            t+=1
             # update probabilities of the cells
             self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
             
@@ -412,6 +408,7 @@ class Bot:
             for loc in path:
                 t += 1
                 print(f"Bot position: {loc}")
+                self.setloc(loc[0], loc[1])
                 if loc==dest:
                     print(f"Rat Found at: {loc} in {t} timesteps")
                     rat_found = 1
@@ -420,6 +417,7 @@ class Bot:
                     self.possibleRat.remove(loc)
                     self.belief[r,c] = 0
                     ping_received = self.generate_ping((r,c), loc_rat)
+                    t+=1
                     # update probabilities of the cells
                     self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
                     
@@ -442,99 +440,5 @@ class Bot:
                         f.write("\n")
                         
                     f.write("\n\n")
-            # select a neighbor by weighted random sampling
-            # neighbors, probs = self.getNeighborProb(curr_loc=(r,c))
-            # print(f"Neighbours: {neighbors}")
-            # print(f"probabs: {probs}")
-            # if sum(probs)==0:
-            #     next = random.choice(neighbors)
-            # else:
-            #     next = random.choices(neighbors, weights= probs, k=1)
-            # r_n, c_n = next[0]
-            # print(f"New Loc: {next}   {t}")
-            # self.setloc(r_n, c_n)
             
-          
-            # if loc_rat == (r_n, c_n):
-            #     print("Rat found")
-            #     rat_found = 1
-        
-           
-    
-    
-    
-    
-    
-#     import numpy as np
-
-# # Parameters
-# alpha = 0.1  # Sensitivity of the detector
-# grid_size = (30, 30)  # Ship's grid dimensions
-
-# # Initialize prior belief that the rat is equally likely to be in any cell
-# belief = np.full(grid_size, 1.0 / (grid_size[0] * grid_size[1]))
-
-# # # Function to calculate Manhattan distance between two cells
-# # def manhattan_distance(cell1, cell2):
-# #     return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
-
-# # Function to get the probability of a "ping" based on distance
-# def ping_probability(bot_position, rat_position, alpha):
-#     distance = manhattan_distance(bot_position, rat_position)
-#     return np.exp(-alpha * (distance - 1))
-
-# # Function to generate a "ping" or "no ping" based on the probability
-# def generate_ping(bot_position, rat_position, alpha):
-#     prob_ping = ping_probability(bot_position, rat_position, alpha)
-#     return np.random.rand() < prob_ping  # True if "ping", False if "no ping"
-
-# # Function to update the belief based on whether a ping was received
-# def update_belief(belief, bot_position, ping_received, alpha):
-#     new_belief = np.zeros_like(belief)
-
-#     # Update each cell's probability based on "ping" or "no ping"
-#     for x in range(grid_size[0]):
-#         for y in range(grid_size[1]):
-#             rat_position = (x, y)
-#             prob_ping = ping_probability(bot_position, rat_position, alpha)
-#             likelihood = prob_ping if ping_received else (1 - prob_ping)
-#             new_belief[x, y] = likelihood * belief[x, y]
-
-#     # Normalize the belief to ensure it sums to 1
-#     total_belief = np.sum(new_belief)
-#     if total_belief > 0:
-#         new_belief /= total_belief
-#     else:
-#         # If all probabilities are zero, reset to uniform distribution
-#         new_belief.fill(1.0 / (grid_size[0] * grid_size[1]))
-    
-#     return new_belief
-
-# # Example usage
-# # Initial positions (for demonstration purposes)
-# bot_position = (15, 15)  # Assume bot starts at the center of the grid
-# rat_position = (20, 20)  # Assume rat starts at some random position
-
-# # Generate "ping" or "no ping" based on the current bot and rat positions
-# ping_received = generate_ping(bot_position, rat_position, alpha)
-
-# # Update belief based on the ping result
-# belief = update_belief(belief, bot_position, ping_received, alpha)
-
-# # Output the updated belief grid
-# print("Updated belief grid:")
-# print(belief)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
- 
+        return t

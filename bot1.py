@@ -3,7 +3,6 @@ from queue import PriorityQueue
 import random
 import math
 
-# from networkx import neighbors
 import numpy as np
 
 
@@ -14,8 +13,7 @@ from ui import ShipInterface
 
 
 class Bot:
-    def __init__(self,  ship:Ship , r:int, c:int, alpha:float, interface:ShipInterface, seed: int):
-        self.random = random.Random(seed)
+    def __init__(self,  ship:Ship , r:int, c:int, alpha:float, interface:ShipInterface):
         self.id = 1
         self.r = r
         self.c = c
@@ -66,8 +64,6 @@ class Bot:
         self.c_k += self.c_disp
         print(f"Known loc: {self.r_k, self.c_k}")
         print(f"curr loc : {self.r, self.c}")
-        # self.r = self.r_k + self.r_disp
-        # self.c = self.c_k + self.c_disp
         
     
         
@@ -87,8 +83,6 @@ class Bot:
         
     def get_possibleloclen(self):
         return len(self.possibleloc)
-    # def set_b8neighbors(self, b8neighbors):
-    #     self.b8neighbors = b8neighbors
     
     def openDirs(self, r,c ):
         openDirs = ''
@@ -168,7 +162,7 @@ class Bot:
         for _, _, dirs in self.possibleloc:
             all_dirs += dirs
 
-        return self.random.choice(all_dirs)
+        return random.choice(all_dirs)
         
     def moveBot(self, dir):
         moved = 0
@@ -211,10 +205,7 @@ class Bot:
                     if dir in dir2:
                         remove_blocked.append((r1,c1))
                         self.possibleloc.remove((r1,c1, dir1))
-                        # self.possibleloc.pop(i)
-            # for r,c,dirs in range(len(self.possibleloc)):
-            #     if dir in dirs:
-            #         self.possibleloc.remove((r,c))
+                       
             print(f"Removed in blocking: {remove_blocked}")
             return (0, 0)
         else:
@@ -254,28 +245,17 @@ class Bot:
             print(self.getloc())
             return (r_disp, c_disp)
 
-    # def updateMap(self):
-    #     for disp, dir in zip(self.disp, self.dir):
-    #         r_disp, c_disp = disp
-    #         for 
+   
         
     def getImgPath(self):
         return self.imgpath
         
     def getId(self):
         return self.id
-    
-    # def explore(self):
-    #     b8neighbors = self.senseNeighbors()
-    #     loc = (0,0, b8neighbors)
-    #     dirs = ['u', 'l', 'd', 'r']
-    #     while len(self.possibleloc)>1:
-    #         dir = random.choice(dirs)
 
     def findPosition(self):
         self.createPossibleloc()
         loc_rat = self.ship.getRatloc()
-    # run_simulation(my_ship, r_b, c_b, bot_count, simulationPath, resultPath, stepPath, fileName)
         loc_found = 0
         sensed = 0  
         t= 0 
@@ -284,7 +264,6 @@ class Bot:
             print("\nCurr_positon; ", self.getloc())
             self.interface.update_display(self.getloc(), loc_rat)
             t +=1
-            self.ship.moveRat(self.random)
             if sensed == 0:
                 self.senseNeighbors() 
                 sensed = 1
@@ -302,21 +281,6 @@ class Bot:
             return False
         else:
             return True
-        
-    def calcHeuristic(self,dest):
-        """Calculating the Manhattan distance
-        """
-        r_dest, c_dest = dest
-        d = self.shipSize()
-        for r in range(d):
-            for c in range(d):
-                if self.ship.get_cellval(r,c) != 'b': 
-                    h = abs(r_dest-r) + abs(c_dest-c)
-                    self.ship.get_cell(r, c).set_h(h) 
-        
-    # def createOpenCellProb(self):
-    #     for r,c in self.openCells:
-    #         self.openCellProb.append((r,c,0))
     
     def initializeBelief(self):
         b = 1.0/(len(self.openCells))
@@ -339,7 +303,7 @@ class Bot:
     # Function to generate a "ping" or "no ping" based on the probability
     def generate_ping(self,bot_position, rat_position):
         prob_ping = self.pingProbability(bot_position, rat_position)
-        return self.random.random() < prob_ping  # True if "ping", False if "no ping"
+        return random.random() < prob_ping  # True if "ping", False if "no ping"
 
         
         
@@ -349,6 +313,8 @@ class Bot:
         """
         r_curr, c_curr = currloc
         sum = 0
+        # if not ping_received:
+        #     self.belief[r_curr, c_curr] = 0
         new_belief = np.zeros_like(self.belief)
         for r,c in self.openCells:
             prob_ping = self.pingProbability(currloc, (r,c))
@@ -358,37 +324,16 @@ class Bot:
         total_belief = np.sum(new_belief)
         if total_belief>0:
             new_belief /= total_belief
+        
+            
         return new_belief
            
-    
+   
     def updateProbList(self):
         probs = []
         for r,c in self.possibleRat:
             probs.append(float(self.belief[r,c]))
         return probs
-    
-    def distributeCellProb(self):
-        """distribute the probability of each cell  to itself and its neighbours
-
-        Args:
-            loc (_type_): _description_
-        """
-        new_belief = np.zeros_like(self.belief)
-        for r, c in self.openCells:
-            
-            
-            # r,c = loc
-            dist_cells = self.ship.getNeighbors(r,c,'o') # cells to distribute prob. to
-            dist_cells.append((r,c))
-            l = len(dist_cells)
-            p = self.belief[r,c]
-            self.belief[r,c] = 0
-            new_p = p/l
-            for r_cell, c_cell in dist_cells:
-                new_belief[r_cell, c_cell] += new_p
-            self.belief = new_belief.copy()
-    
-    
     
     def findRat(self):
         loc_rat = self.ship.getRatloc()
@@ -401,10 +346,9 @@ class Bot:
         self.initializeBelief()
         a_star = 0
         r, c= self.getloc()
-        while rat_found ==0 and t<100:
+        while rat_found ==0 and t<1000:
             t+=1
-            self.ship.moveRat(self.random)
-            # r, c = self.getloc()
+            r, c = self.getloc()
             
             prob_list = self.updateProbList()
             max_i = prob_list.index(max(prob_list))
@@ -413,15 +357,13 @@ class Bot:
             if (r, c) != loc_rat:
                 if (r,c) in self.possibleRat:
                     self.belief[r,c] = 0
-                    # self.possibleRat.remove((r,c))
-           
+                    self.possibleRat.remove((r,c))
+
             
             ping_received = self.generate_ping((r,c), loc_rat)
             t+=1
-            self.ship.moveRat(self.random)
             # update probabilities of the cells
             self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
-            self.distributeCellProb()
             
             prob_list = self.updateProbList()
             print(f"\nT: {t}, dest: {dest}")
@@ -430,7 +372,6 @@ class Bot:
             
             for loc in path:
                 t += 1
-                self.ship.moveRat(self.random)
                 print(f"Bot position: {loc}")
                 self.setloc(loc[0], loc[1])
                 if loc==dest:
@@ -438,14 +379,12 @@ class Bot:
                     rat_found = 1
                     break
                 else:
-                    # self.possibleRat.remove(loc)
+                    self.possibleRat.remove(loc)
                     self.belief[r,c] = 0
                     ping_received = self.generate_ping((r,c), loc_rat)
                     t+=1
-                    self.ship.moveRat(self.random)
                     # update probabilities of the cells
                     self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
-                    self.distributeCellProb()
                     
                     prob_list = self.updateProbList()
                     
@@ -467,82 +406,4 @@ class Bot:
                         
                     f.write("\n\n")
         return t
-          
-    
-    
-    
-    
-    
-#     import numpy as np
-
-# # Parameters
-# alpha = 0.1  # Sensitivity of the detector
-# grid_size = (30, 30)  # Ship's grid dimensions
-
-# # Initialize prior belief that the rat is equally likely to be in any cell
-# belief = np.full(grid_size, 1.0 / (grid_size[0] * grid_size[1]))
-
-# # # Function to calculate Manhattan distance between two cells
-# # def manhattan_distance(cell1, cell2):
-# #     return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
-
-# # Function to get the probability of a "ping" based on distance
-# def ping_probability(bot_position, rat_position, alpha):
-#     distance = manhattan_distance(bot_position, rat_position)
-#     return np.exp(-alpha * (distance - 1))
-
-# # Function to generate a "ping" or "no ping" based on the probability
-# def generate_ping(bot_position, rat_position, alpha):
-#     prob_ping = ping_probability(bot_position, rat_position, alpha)
-#     return np.random.rand() < prob_ping  # True if "ping", False if "no ping"
-
-# # Function to update the belief based on whether a ping was received
-# def update_belief(belief, bot_position, ping_received, alpha):
-#     new_belief = np.zeros_like(belief)
-
-#     # Update each cell's probability based on "ping" or "no ping"
-#     for x in range(grid_size[0]):
-#         for y in range(grid_size[1]):
-#             rat_position = (x, y)
-#             prob_ping = ping_probability(bot_position, rat_position, alpha)
-#             likelihood = prob_ping if ping_received else (1 - prob_ping)
-#             new_belief[x, y] = likelihood * belief[x, y]
-
-#     # Normalize the belief to ensure it sums to 1
-#     total_belief = np.sum(new_belief)
-#     if total_belief > 0:
-#         new_belief /= total_belief
-#     else:
-#         # If all probabilities are zero, reset to uniform distribution
-#         new_belief.fill(1.0 / (grid_size[0] * grid_size[1]))
-    
-#     return new_belief
-
-# # Example usage
-# # Initial positions (for demonstration purposes)
-# bot_position = (15, 15)  # Assume bot starts at the center of the grid
-# rat_position = (20, 20)  # Assume rat starts at some random position
-
-# # Generate "ping" or "no ping" based on the current bot and rat positions
-# ping_received = generate_ping(bot_position, rat_position, alpha)
-
-# # Update belief based on the ping result
-# belief = update_belief(belief, bot_position, ping_received, alpha)
-
-# # Output the updated belief grid
-# print("Updated belief grid:")
-# print(belief)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
- 
+            

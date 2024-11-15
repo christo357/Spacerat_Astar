@@ -12,7 +12,8 @@ from cell import Cell
 from logger import Logger
 from ship import Ship
 from ui import ShipInterface
-import bot1_m as bot
+import bot1_m as bot1
+import bot2_m as bot2
 
 # Constants
 SIZE = 30
@@ -67,16 +68,36 @@ pygame.init()
 window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Space Rat Simulation")
 
-
-my_ship = Ship(SIZE)
+RANDOM_SEED = random.randint(0, 10000)
+my_ship = Ship(SIZE, RANDOM_SEED)
 my_ship.createShip()
 interface1 = ShipInterface( SIZE, CELL_SIZE, 1, my_ship.getOpenCells())
 r_b, c_b = random.choice(my_ship.getOpenCells())
 print(f"initial bot loc : {r_b, c_b}")
 my_ship.start_botloc =  (r_b, c_b)
-my_bot = bot.Bot(my_ship, r_b, c_b,alpha=ALPHA, interface=interface1)
-getPos = my_bot.findPosition()
+rat_init = my_ship.getRatloc()
+my_bot1 = bot1.Bot(my_ship, r_b, c_b,alpha=ALPHA, interface=interface1, seed=RANDOM_SEED)
+getPos = my_bot1.findPosition()
+bot1_len = len(my_ship.ratPositions)
 
 if getPos:
     print("FINDING RAT")
-    my_bot.findRat()
+    steps1 = my_bot1.findRat()
+    bot1_rat = my_ship.getRatPositions()
+
+my_ship.setRatloc(rat_init)
+my_bot2 = bot2.Bot(my_ship, r_b, c_b,alpha=ALPHA, interface=interface1, seed=RANDOM_SEED)
+getPos = my_bot2.findPosition()
+bot2_len = len(my_ship.ratPositions)
+
+if getPos:
+    print("FINDING RAT")
+    steps2 = my_bot2.findRat()
+    bot2_rat = my_ship.getRatPositions()
+    
+    
+print(f"Bot 1 rat len: {bot1_len}")
+print(f"Bot 2 rat len: {bot2_len}")
+print(f"Bot 1 rat: {bot1_rat}")
+print(f"Bot 2 rat : {bot2_rat}")
+print(f"Total steps: bot1: {steps1}, bot2: {steps2}")

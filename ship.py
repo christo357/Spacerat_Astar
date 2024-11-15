@@ -3,7 +3,8 @@ import random
 from cell import Cell
 
 class Ship:
-    def __init__(self, d):
+    def __init__(self, d, seed = None):
+        self.random = random.Random(seed)
         self.d = d
         self.open = []
         self.blocked = []
@@ -17,7 +18,8 @@ class Ship:
         self.ratloc = None
         
         self.grid = [[Cell(row, col) for col in range(self.d)] for row in range(self.d)]
-          
+        self.ratPositions = []
+        
     def getSize(self):
         return self.d
     
@@ -48,10 +50,15 @@ class Ship:
         
     def getRatloc(self):
         return self.ratloc
+    
+    def setRatloc(self, loc):
+        self.ratloc = loc
+        self.ratPositions = [loc]
    
     def createRat(self):
-        rs, cs = random.choice(self.open)
+        rs, cs = self.random.choice(self.open)
         self.ratloc = (rs, cs)
+        self.ratPositions.append(self.ratloc)
      
     def checkRat(self,r, c):
         if self.ratloc == (r,c):
@@ -59,11 +66,15 @@ class Ship:
         else: 
             return False
         
-    def moveRat(self):
+    def moveRat(self,rand):
         r, c = self.ratloc
         moveCells = self.getNeighbors(r, c, 'o')    
         moveCells.append((r,c))
-        self.ratloc = random.choice(moveCells)
+        self.ratloc = rand.choice(moveCells)
+        self.ratPositions.append(self.ratloc)
+        
+    def getRatPositions(self):
+        return self.ratPositions
     
     def getNeighbors(self, r,c, celltype):
         neighbourList = []

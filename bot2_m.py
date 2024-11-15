@@ -396,6 +396,21 @@ class Bot:
         with open("rat_results.txt","w") as f:
                 f.write(f"Ratloc : {loc_rat}\n")
                 f.write(f"Bot Pos: {self.getloc()}\n")
+                
+        # Divide the ship into 9 regions (3x3 grid of 10x10 cells each)
+        regions = {
+            0: [(i, j) for i in range(0, 10) for j in range(0, 10)],
+            1: [(i, j) for i in range(0, 10) for j in range(10, 20)],
+            2: [(i, j) for i in range(0, 10) for j in range(20, 30)],
+            3: [(i, j) for i in range(10, 20) for j in range(0, 10)],
+            4: [(i, j) for i in range(10, 20) for j in range(10, 20)],
+            5: [(i, j) for i in range(10, 20) for j in range(20, 30)],
+            6: [(i, j) for i in range(20, 30) for j in range(0, 10)],
+            7: [(i, j) for i in range(20, 30) for j in range(10, 20)],
+            8: [(i, j) for i in range(20, 30) for j in range(20, 30)]
+        }
+        current_region = None
+        
         t=0
         rat_found = 0
         self.initializeBelief()
@@ -404,12 +419,32 @@ class Bot:
         while rat_found ==0 and t<100:
             t+=1
             self.ship.moveRat(self.random)
+            
             # r, c = self.getloc()
+            region_probs = {}      
             
             prob_list = self.updateProbList()
-            max_i = prob_list.index(max(prob_list))
-            dest = self.possibleRat[max_i]
             
+            # find the total probability for each region
+            for region, cells in regions.items():
+                region_probs[region] = sum(self.belief[i, j] for i, j in cells)
+                
+            max_region = max(region_probs, key = region_probs.get)
+            threshold = 0.05*region_probs[max_region]
+            # If the max probability region is different from the current, switch to the new region
+            if current_region is None or region_probs[max_region] > region_probs[current_region]+ threshold:
+                current_region = max_region
+            
+            region_cells = regions[current_region]
+            cell_probs = [(self.belief[i, j], (i, j)) for i, j in region_cells]
+            cell_probs.sort(reverse=True)  # Sort by probability descending
+            dest = cell_probs[0][1]  # Cell with the highest probability in the current region
+        
+            
+            # prob_list = self.updateProbList()
+            # max_i = prob_list.index(max(prob_list))
+            # dest = self.possibleRat[max_i]
+            r, c = self.getloc()
             if (r, c) != loc_rat:
                 if (r,c) in self.possibleRat:
                     self.belief[r,c] = 0
