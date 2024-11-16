@@ -336,8 +336,27 @@ class Bot:
             probs.append(float(self.belief[r,c]))
         return probs
     
-    # def move_Random(self, loc):
+    def chooseNextCell(self, curr_loc):
+        r, c = curr_loc
         
+        # Find cells with highest probability
+        max_prob = np.max(self.belief)
+        high_prob_cells = [
+            (i,j) for i,j in self.openCells 
+            if self.belief[i,j] > max_prob * 0.9  # Consider cells with prob close to max
+        ]
+        
+        # Choose closest high probability cell
+        min_dist = float('inf')
+        best_target = None
+        
+        for cell in high_prob_cells:
+            dist = self.calcManhattan(curr_loc, cell)
+            if dist < min_dist:
+                min_dist = dist
+                best_target = cell
+                
+        return best_target
     
     def findRat(self):
         loc_rat = self.ship.getRatloc()
@@ -361,10 +380,7 @@ class Bot:
                 rat_found = 1
                 break
             else:
-                if len(self.possibleRat)< 50:
-                    print(f"t: {t}, possible: {self.possibleRat}")
-                    if len(self.possibleRat) ==1:
-                        break
+                self.belief[r,c] = 0
                 if loc in self.possibleRat:
                         self.possibleRat.remove(loc)
                         self.belief[r,c] = 0
@@ -381,8 +397,9 @@ class Bot:
                 if a_star ==0:
                     a_star=1
                     prob_list = self.updateProbList()
-                    max_i = prob_list.index(max(prob_list))
-                    dest = self.possibleRat[max_i]
+                    # max_i = prob_list.index(max(prob_list))
+                    # dest = self.possibleRat[max_i]
+                    dest = self.chooseNextCell(loc)
                     
                     print(f"\nT: {t}, dest: {dest}, botpos: {loc}")
                     astar = Astar((r,c), dest, self.possibleRat,self.ship)
