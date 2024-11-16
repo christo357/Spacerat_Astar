@@ -33,7 +33,10 @@ class Astar:
         for r in range(d):
             for c in range(d):
                 if self.ship.get_cellval(r,c) != 'b': 
+                    
                     h = abs(r_dest-r) + abs(c_dest-c)
+                    if (r,c) in self.possibleRat:
+                        h+=1
                     self.h[r,c] = h
                     
     def tracePath(self):
@@ -41,15 +44,15 @@ class Astar:
         path = []
         r, c = self.dest
         while r is not None and c is not None:
-            print(f"({r}, {c}), ")
+            # print(f"({r}, {c}) ", end=',')
             path.append((r,c))
             r, c = self.parent[r,c]
             if (r,c) == self.start:
                 break
         path.reverse()
         print(f'PATH: {path}')
-        if len(path)>1:
-            return path[1:]
+        return path
+        
                     
                     
     def update_priority(self, old_item, new_p1):

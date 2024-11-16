@@ -13,7 +13,8 @@ from ui import ShipInterface
 
 
 class Bot:
-    def __init__(self,  ship:Ship , r:int, c:int, alpha:float, interface:ShipInterface):
+    def __init__(self,  ship:Ship , r:int, c:int, alpha:float, interface:ShipInterface, seed: int):
+        self.random = random.Random(seed)
         self.id = 1
         self.r = r
         self.c = c
@@ -335,6 +336,9 @@ class Bot:
             probs.append(float(self.belief[r,c]))
         return probs
     
+    # def move_Random(self, loc):
+        
+    
     def findRat(self):
         loc_rat = self.ship.getRatloc()
         print(f"RatLoc: {loc_rat}")
@@ -345,65 +349,101 @@ class Bot:
         rat_found = 0
         self.initializeBelief()
         a_star = 0
-        r, c= self.getloc()
-        while rat_found ==0 and t<1000:
+        move = 0
+        loc = self.getloc()
+        r,c = loc
+        while rat_found ==0 and t<1800:
             t+=1
             r, c = self.getloc()
+            loc = (r,c)
+            if loc==loc_rat:
+                print(f"Rat Found at: {loc} in {t} timesteps")
+                rat_found = 1
+                break
+            else:
+                if len(self.possibleRat)< 50:
+                    print(f"t: {t}, possible: {self.possibleRat}")
+                    if len(self.possibleRat) ==1:
+                        break
+                if loc in self.possibleRat:
+                        self.possibleRat.remove(loc)
+                        self.belief[r,c] = 0
             
-            prob_list = self.updateProbList()
-            max_i = prob_list.index(max(prob_list))
-            dest = self.possibleRat[max_i]
-            
-            if (r, c) != loc_rat:
-                if (r,c) in self.possibleRat:
-                    self.belief[r,c] = 0
-                    self.possibleRat.remove((r,c))
-
-            
-            ping_received = self.generate_ping((r,c), loc_rat)
-            t+=1
-            # update probabilities of the cells
-            self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
-            
-            prob_list = self.updateProbList()
-            print(f"\nT: {t}, dest: {dest}")
-            astar = Astar((r,c), dest, self.possibleRat,self.ship)
-            path = astar.findPath()
-            
-            for loc in path:
-                t += 1
-                print(f"Bot position: {loc}")
-                self.setloc(loc[0], loc[1])
-                if loc==dest:
-                    print(f"Rat Found at: {loc} in {t} timesteps")
-                    rat_found = 1
-                    break
-                else:
-                    self.possibleRat.remove(loc)
-                    self.belief[r,c] = 0
-                    ping_received = self.generate_ping((r,c), loc_rat)
-                    t+=1
-                    # update probabilities of the cells
-                    self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
-                    
+            if move==0:
+                ping_received = self.generate_ping((r,c), loc_rat)
+                # update probabilities of the cells
+                self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+                prob_list = self.updateProbList()
+                move = 1
+                
+            else:
+                move = 0
+                if a_star ==0:
+                    a_star=1
                     prob_list = self.updateProbList()
+                    max_i = prob_list.index(max(prob_list))
+                    dest = self.possibleRat[max_i]
+                    
+                    print(f"\nT: {t}, dest: {dest}, botpos: {loc}")
+                    astar = Astar((r,c), dest, self.possibleRat,self.ship)
+                    path = astar.findPath()
+                    
+                    # if len(path) == 0:
+                    #     self.move_random(loc)
+            
+            # if (r, c) != loc_rat:
+            #     if (r,c) in self.possibleRat:
+            #         self.belief[r,c] = 0
+            #         self.possibleRat.remove((r,c))
+
+                else:
+                    # print(f"Path : {path}")
+                    
+                    loc = path[0]
+                    path.remove(loc)
+                    print(f"Bot position: {loc}")
+                    self.setloc(loc[0], loc[1])
+                    if loc in self.possibleRat:
+                        self.possibleRat.remove(loc)
+                        self.belief[r,c] = 0
+                    if loc == dest:
+                        a_star = 0
+                    # ping_received = self.generate_ping((r,c), loc_rat)
+                    # t+=1
+                    # update probabilities of the cells
+                    # self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+                    
+                    # prob_list = self.updateProbList()
+            
+            
+            # for loc in path:
+            #     t += 1
+                
+            #     if loc==loc_rat:
+            #         print(f"Rat Found at: {loc} in {t} timesteps")
+            #         rat_found = 1
+            #         break
+            #     else:
+            #         # print(f"Possible rat: {self.possibleRat}")
+            #         # print(f"loc: {loc}")
+                    
                     
                     
             
-                with open("rat_results.txt","a") as f:
-                    f.write(f"timestep t: {t}\n")
-                    for r in range(0, self.ship.getSize()):
-                        for c in range(0, self.ship.getSize()):
-                            # cell = self.ship.get_cell(r,c)
-                            prob = self.belief[r,c]
-                            if (r,c) == loc_rat:
-                                f.write(f"R")
-                            elif (r,c) == loc:
-                                f.write(f"B")
-                            else:
-                                f.write(f"{prob:.4f} ")
-                        f.write("\n")
-                        
-                    f.write("\n\n")
+            with open("rat_results.txt","a") as f:
+                f.write(f"timestep t: {t}\n")
+                for r in range(0, self.ship.getSize()):
+                    for c in range(0, self.ship.getSize()):
+                        # cell = self.ship.get_cell(r,c)
+                        prob = self.belief[r,c]
+                        if (r,c) == loc_rat:
+                            f.write(f"R")
+                        elif (r,c) == loc:
+                            f.write(f"B")
+                        else:
+                            f.write(f"{prob:.4f} ")
+                    f.write("\n")
+                    
+                f.write("\n\n")
         return t
             
