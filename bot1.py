@@ -383,7 +383,7 @@ class Bot:
                 self.belief[r,c] = 0
                 if loc in self.possibleRat:
                         self.possibleRat.remove(loc)
-                        self.belief[r,c] = 0
+                        # self.belief[r,c] = 0
             
             if move==0:
                 ping_received = self.generate_ping((r,c), loc_rat)
