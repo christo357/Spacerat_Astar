@@ -225,7 +225,7 @@ class Ship:
         # self.blockOuter()
         self.displayNumbers()             #############
         self.calcBlockNeighbours()
-        self.displayShip()
+        # self.displayShip()
         self.createRat()
         
         

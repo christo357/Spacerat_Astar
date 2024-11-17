@@ -20,7 +20,7 @@ class Logger():
             file.write(f"Rat Location: ({rat_row}, {rat_col})\n")
             file.write("-" * 40 + "\n")
             
-    def log_grid_state(self, timestep, bot, rat, bot_start=(0,0)):
+    def log_grid_state(self, timestep, bot, rat, loc_find = 0):
         with open(self.resultPath, "a") as file:
             file.write(f"Timestep: {timestep}\n")
             for row in range(self.size):
@@ -34,8 +34,10 @@ class Logger():
                     file.write(f"{v} ")
                 file.write("\n")
             
-            self.bot_start = bot_start
-            file.write(f"Bot start: {bot_start}\n")
+            if isinstance(loc_find, tuple) and len(loc_find) == 2 and all(isinstance(i, int) for i in loc_find):
+                self.bot_start = loc_find
+            
+            file.write(f"Bot start: {self.bot_start}\n")
             file.write(f"Bot: {bot}\n")
             file.write(f"Rat: {rat}\n")
             # for i in range(0, bot_count):

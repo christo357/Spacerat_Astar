@@ -9,21 +9,24 @@ import numpy as np
 from cell import Cell
 from ship import Ship
 from astar import Astar
-from ui import ShipInterface
+from logger import Logger
 
 
 class Bot:
-    def __init__(self,  ship:Ship , r:int, c:int, alpha:float, interface:ShipInterface, seed: int):
+    def __init__(self,  ship:Ship , r:int, c:int, alpha:float,  seed: int, resultPath: str ):
         self.random = random.Random(seed)
         self.id = 1
         self.r = r
         self.c = c
+        self.t = 0
         
         self.r_start = r
         self.c_start = c
         
         self.r_k = None
         self.c_k = None
+        self.r_ks = None
+        self.c_ks = None
         self.r_disp = 0
         self.c_disp = 0
         
@@ -31,8 +34,8 @@ class Bot:
         self.ship = ship
         self.shipSize = self.ship.getSize()
         self.imgpath = 'images/bot2.png'
+        self.resultPath = resultPath
         self.alpha = alpha
-        self.interface = interface
         
         self.openCells = self.ship.getOpenCells()
         self.possibleloc = self.ship.getOpenCells()
@@ -43,7 +46,8 @@ class Bot:
         self.movdirs =''
         self.movdisp = []
         
-        
+        self.logger = Logger(self.shipSize, self.ship, self.resultPath)
+    
     
     def getStart(self):
         return (self.r_start, self.c_start)
@@ -58,15 +62,19 @@ class Bot:
     def getKnownloc(self):
         return (self.r_k , self.c_k)
     
+    
+    def getKnownStart(self):
+        return (self.r_ks, self.c_ks)
+    
     def updateknownloc(self):
         self.r_k, self.c_k,_ = self.possibleloc[0]
     
-        print(f"Known loc: {self.r_k, self.c_k}")
-        print(f"Start loc : {self.r_start, self.c_start}")
+        # print(f"Known loc: {self.r_k, self.c_k}")
+        # print(f"Start loc : {self.r_start, self.c_start}")
         self.r_k += self.r_disp
         self.c_k += self.c_disp
-        print(f"Known loc: {self.r_k, self.c_k}")
-        print(f"curr loc : {self.r, self.c}")
+        # print(f"Known loc: {self.r_k, self.c_k}")
+        # print(f"curr loc : {self.r, self.c}")
         
     
         
@@ -156,8 +164,8 @@ class Bot:
                 if map_cell.get_b8neighbors()!= self.b8neighbors:
                     remove_list.append((r_map, c_map))
                     self.possibleloc = [item for item in self.possibleloc if not (item[0]==r_map and item[1]==c_map)]
-        print(f"Neighbours removed in sensing: {remove_list}")
-        print(f"possibleloc after sensing: {self.possibleloc}")
+        # print(f"Neighbours removed in sensing: {remove_list}")
+        # print(f"possibleloc after sensing: {self.possibleloc}")
             
     def detectCommonDir(self):
         """Detect the most common open direction in the map the bot can move"""
@@ -190,14 +198,14 @@ class Bot:
             # c_n = c-1
         # else:
         #     return (0,0)
-        print(f"Possibleloc: {self.possibleloc}")
-        print("len: ", len(self.possibleloc))
+        # print(f"Possibleloc: {self.possibleloc}")
+        # print("len: ", len(self.possibleloc))
         
         if self.ship.get_cellval(r+r_disp, c+c_disp) == 'b':
-            print("blocked")
+            # print("blocked")
             remove_blocked = []
             for r1,c1,dir1 in self.possibleloc:
-                # print("If: ", i)
+                
                 r2 = r1+self.r_disp
                 c2 = c1+self.c_disp
                 if self.invalidposition(r2,c2):
@@ -209,7 +217,7 @@ class Bot:
                         remove_blocked.append((r1,c1))
                         self.possibleloc.remove((r1,c1, dir1))
                        
-            print(f"Removed in blocking: {remove_blocked}")
+            # print(f"Removed in blocking: {remove_blocked}")
             return (0, 0)
         else:
             
@@ -217,7 +225,7 @@ class Bot:
             self.movdisp.append((r_disp, c_disp))
             remove_dir = []
             for r1,c1,dir1 in self.possibleloc:
-                # print("If: ", i)
+                
                 r2 = r1+self.r_disp
                 c2 = c1+self.c_disp
                 
@@ -230,21 +238,14 @@ class Bot:
                         remove_dir.append((r1, c1))
                         self.possibleloc.remove((r1,c1, dir1))
                         
-            print(f"Removed in dir: {remove_dir}")
-            # print("len: ", len(self.possibleloc))
-            # for r1,c1,dir1 in self.possibleloc:
-            #     # print("It: ", i)
-            #     # print(f"Possibleloc: {self.possibleloc[i]}")
-            #     if dir not in dir1:
-            #         self.possibleloc.remove((r1,c1, dir1))
-            # self.r_disp = self.r_start-r_n
-            # self.c_disp = self.c_start-c_n
+            # print(f"Removed in dir: {remove_dir}")
+            
             self.setloc(r+r_disp, c+c_disp)
             self.movdirs+= dir
             self.movdisp.append((r_disp, c_disp))
             self.r_disp += r_disp
             self.c_disp += c_disp
-            print("tot_ disp: ", self.r_disp, self.c_disp)
+            # print("tot_ disp: ", self.r_disp, self.c_disp)
             print(self.getloc())
             return (r_disp, c_disp)
 
@@ -261,19 +262,18 @@ class Bot:
         loc_rat = self.ship.getRatloc()
         loc_found = 0
         sensed = 0  
-        t= 0 
-        while loc_found==0 and t<200:
-            
-            print("\nCurr_positon; ", self.getloc())
-            self.interface.update_display(self.getloc(), loc_rat)
-            t +=1
+        while loc_found==0 :#and t<200:
+            self.logger.log_grid_state(self.t, self.getloc(), loc_rat)
+            # print("\nCurr_positon; ", self.getloc())
+            # self.interface.update_display(self.getloc(), loc_rat)
+            self.t +=1
             if sensed == 0:
                 self.senseNeighbors() 
                 sensed = 1
             else:
                 dir = self.detectCommonDir()
                 r_disp, c_disp = self.moveBot(dir)
-                print(f'T{t}: {r_disp, c_disp}')
+                print(f'T{self.t}: {r_disp, c_disp}')
                 sensed = 0
             if self.get_possibleloclen() ==1:
                 loc_found = 1
@@ -281,9 +281,10 @@ class Bot:
                 
         if (self.r_k, self.c_k) != self.getloc():
             print("known location differ from original")
-            return False
+            return (0,0)
         else:
-            return True
+            self.logger.log_grid_state(self.t, self.getloc(), loc_rat, self.getKnownStart())
+            return self.getKnownStart()
     
     def initializeBelief(self):
         b = 1.0/(len(self.openCells))
@@ -353,7 +354,7 @@ class Bot:
             (i,j) for i,j in region_cells
             if self.belief[i,j] > max_prob * 0.9  # Consider cells with prob close to max
         ]
-        
+        # print(f"high prob cells : {high_prob_cells}")
         
         
         
@@ -373,25 +374,31 @@ class Bot:
     def findRat(self):
         loc_rat = self.ship.getRatloc()
         print(f"RatLoc: {loc_rat}")
-        with open("rat_results.txt","w") as f:
-                f.write(f"Ratloc : {loc_rat}\n")
-                f.write(f"Bot Pos: {self.getloc()}\n")
+        # with open("rat_results.txt","w") as f:
+        #         f.write(f"Ratloc : {loc_rat}\n")
+        #         f.write(f"Bot Pos: {self.getloc()}\n")
                 
         # Divide the ship into 9 regions (3x3 grid of 10x10 cells each)
+        # self.regions = {
+        #     0: [(i, j) for i in range(0, 10) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
+        #     1: [(i, j) for i in range(0, 10) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
+        #     2: [(i, j) for i in range(0, 10) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ],
+        #     3: [(i, j) for i in range(10, 20) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
+        #     4: [(i, j) for i in range(10, 20) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
+        #     5: [(i, j) for i in range(10, 20) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ],
+        #     6: [(i, j) for i in range(20, 30) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
+        #     7: [(i, j) for i in range(20, 30) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
+        #     8: [(i, j) for i in range(20, 30) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ]
+        # }
         self.regions = {
-            0: [(i, j) for i in range(0, 10) for j in range(0, 10)],
-            1: [(i, j) for i in range(0, 10) for j in range(10, 20)],
-            2: [(i, j) for i in range(0, 10) for j in range(20, 30)],
-            3: [(i, j) for i in range(10, 20) for j in range(0, 10)],
-            4: [(i, j) for i in range(10, 20) for j in range(10, 20)],
-            5: [(i, j) for i in range(10, 20) for j in range(20, 30)],
-            6: [(i, j) for i in range(20, 30) for j in range(0, 10)],
-            7: [(i, j) for i in range(20, 30) for j in range(10, 20)],
-            8: [(i, j) for i in range(20, 30) for j in range(20, 30)]
+            0: [(i, j) for i in range(0, 15) for j in range(0, 15) if self.ship.get_cellval(i, j) == 'o' ],
+            1: [(i, j) for i in range(0, 15) for j in range(15, 30) if self.ship.get_cellval(i, j) == 'o' ],
+            2: [(i, j) for i in range(15, 30) for j in range(0, 15) if self.ship.get_cellval(i, j) == 'o' ],
+            3: [(i, j) for i in range(15, 30) for j in range(15, 30) if self.ship.get_cellval(i, j) == 'o' ],
         }
         self.current_region = None
                 
-        t=0
+        
         rat_found = 0
         self.initializeBelief()
         
@@ -400,13 +407,14 @@ class Bot:
         
         loc = self.getloc()
         r, c= loc
-        while rat_found ==0 and t<1000:
-            t+=1
+        while rat_found ==0 : #and t<1000:
+            self.logger.log_grid_state(self.t, self.getloc(), loc_rat)
+            self.t+=1
             loc = self.getloc()
             (r,c) = loc
             # loc_rat = self.ship.getRatloc()
             if loc==loc_rat:
-                print(f"Rat Found at: {loc} in {t} timesteps")
+                print(f"Rat Found at: {loc} in {self.t} timesteps")
                 rat_found = 1
                 break
             else:
@@ -445,14 +453,14 @@ class Bot:
                     # dest = cell_probs[0][1]  # Cell with the highest probability in the current region
                     dest = self.chooseNextCell(loc)
                     
-                    print(f"\nT: {t}, dest: {dest}")
+                    # print(f"\nT: {self.t}, dest: {dest}")
                     astar = Astar((r,c), dest, self.possibleRat,self.ship)
                     path = astar.findPath()
                     
                 else:
                     loc = path[0]
                     path.remove(loc)
-                    print(f"Bot position: {loc}")
+                    # print(f"Bot position: {loc}")
                     self.setloc(loc[0], loc[1])
                     if loc in self.possibleRat:
                         self.possibleRat.remove(loc)
@@ -460,57 +468,22 @@ class Bot:
                     if loc == dest:
                         a_star = 0
             
-            # # max_i = prob_list.index(max(prob_list))
-            # # dest = self.possibleRat[max_i]
-            # r, c = self.getloc()
-            # if (r, c) != loc_rat:
-            #     if (r,c) in self.possibleRat:
-            #         self.belief[r,c] = 0
-            #         self.possibleRat.remove((r,c))
-                
-
+            # self.logger.log_grid_state(self.t, self.getloc(), loc_rat)
             
-            # # ping_received = self.generate_ping((r,c), loc_rat)
-            # # t+=1
-            # # # update probabilities of the cells
-            # # self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
-            
-            # # prob_list = self.updateProbList()
-            
-            
-            # for loc in path:
-            #     t += 1
-                
-            #     if loc==dest:
-            #         print(f"Rat Found at: {loc} in {t} timesteps")
-            #         rat_found = 1
-            #         break
-            #     else:
-            #         self.possibleRat.remove(loc)
-            #         self.belief[r,c] = 0
-            #         # ping_received = self.generate_ping((r,c), loc_rat)
-            #         # t+=1
-            #         # # update probabilities of the cells
-            #         # self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+            # with open("rat_results_b2s.txt","a") as f:
+            #     f.write(f"timestep t: {t}\n")
+            #     for r in range(0, self.ship.getSize()):
+            #         for c in range(0, self.ship.getSize()):
+            #             # cell = self.ship.get_cell(r,c)
+            #             prob = self.belief[r,c]
+            #             if (r,c) == loc_rat:
+            #                 f.write(f"R")
+            #             elif (r,c) == loc:
+            #                 f.write(f"B")
+            #             else:
+            #                 f.write(f"{prob:.4f} ")
+            #         f.write("\n")
                     
-            #         # prob_list = self.updateProbList()
-                    
-                    
+            #     f.write("\n\n")
             
-            with open("rat_results_b2s.txt","a") as f:
-                f.write(f"timestep t: {t}\n")
-                for r in range(0, self.ship.getSize()):
-                    for c in range(0, self.ship.getSize()):
-                        # cell = self.ship.get_cell(r,c)
-                        prob = self.belief[r,c]
-                        if (r,c) == loc_rat:
-                            f.write(f"R")
-                        elif (r,c) == loc:
-                            f.write(f"B")
-                        else:
-                            f.write(f"{prob:.4f} ")
-                    f.write("\n")
-                    
-                f.write("\n\n")
-            
-        return t
+        return self.t

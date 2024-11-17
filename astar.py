@@ -35,7 +35,7 @@ class Astar:
                 if self.ship.get_cellval(r,c) != 'b': 
                     
                     h = abs(r_dest-r) + abs(c_dest-c)
-                    if (r,c) in self.possibleRat:
+                    if (r,c) not in self.possibleRat:
                         h+=1
                     self.h[r,c] = h
                     
@@ -50,7 +50,7 @@ class Astar:
             if (r,c) == self.start:
                 break
         path.reverse()
-        print(f'PATH: {path}')
+        # print(f'PATH: {path}')
         return path
         
                     
