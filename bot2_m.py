@@ -313,7 +313,7 @@ class Bot:
                     self.belief[r,c] = b
     
     def calcManhattan(self, loc1, loc2):
-       return abs(loc1[0]-loc2[0]) + abs(loc1[0]-loc2[1])
+       return abs(loc1[0]-loc2[0]) + abs(loc1[1]-loc2[1])
     
     def pingProbability(self, loc1 , loc2):
         d = self.calcManhattan(loc1, loc2)
@@ -405,6 +405,8 @@ class Bot:
         # max_prob = np.max(self.belief)
         
         region_cells = self.regions[self.current_region]
+        if curr_loc in region_cells:
+            region_cells.remove(curr_loc)
         # print(f"region cells : {region_cells}")
         
         cell_probs = [(self.belief[i, j], (i, j)) for i, j in region_cells]
@@ -414,7 +416,7 @@ class Bot:
         
         high_prob_cells = [
             (i,j) for i,j in region_cells
-            if self.belief[i,j] >= max_prob * 0.8  # Consider cells with prob close to max
+            if self.belief[i,j] >= max_prob * 0.9  # Consider cells with prob close to max
         ]
         # print(f"high prob cells : {high_prob_cells}")
         
@@ -437,6 +439,13 @@ class Bot:
                 min_dist = dist
                 best_target = cell
                 
+        if best_target is None:
+            print(f"curr_cell: {curr_loc}")
+            print(f'high probable cells: {high_prob_cells}')
+            print(f"min dist: {min_dist}")
+            print(f"dist: {dist}")
+            print(f"best target: {best_target}")
+            self.ship.displayShip()
         return best_target
     
     def findRat(self):
@@ -447,23 +456,23 @@ class Bot:
         #         f.write(f"Bot Pos: {self.getloc()}\n")
                 
         # Divide the ship into 9 regions (3x3 grid of 10x10 cells each)
-        # self.regions = {
-        #     0: [(i, j) for i in range(0, 10) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
-        #     1: [(i, j) for i in range(0, 10) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
-        #     2: [(i, j) for i in range(0, 10) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ],
-        #     3: [(i, j) for i in range(10, 20) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
-        #     4: [(i, j) for i in range(10, 20) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
-        #     5: [(i, j) for i in range(10, 20) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ],
-        #     6: [(i, j) for i in range(20, 30) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
-        #     7: [(i, j) for i in range(20, 30) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
-        #     8: [(i, j) for i in range(20, 30) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ]
-        # }
         self.regions = {
-            0: [(i, j) for i in range(0, 15) for j in range(0, 15) if self.ship.get_cellval(i, j) == 'o' ],
-            1: [(i, j) for i in range(0, 15) for j in range(15, 30) if self.ship.get_cellval(i, j) == 'o' ],
-            2: [(i, j) for i in range(15, 30) for j in range(0, 15) if self.ship.get_cellval(i, j) == 'o' ],
-            3: [(i, j) for i in range(15, 30) for j in range(15, 30) if self.ship.get_cellval(i, j) == 'o' ],
+            0: [(i, j) for i in range(0, 10) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
+            1: [(i, j) for i in range(0, 10) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
+            2: [(i, j) for i in range(0, 10) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ],
+            3: [(i, j) for i in range(10, 20) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
+            4: [(i, j) for i in range(10, 20) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
+            5: [(i, j) for i in range(10, 20) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ],
+            6: [(i, j) for i in range(20, 30) for j in range(0, 10) if self.ship.get_cellval(i, j) == 'o' ],
+            7: [(i, j) for i in range(20, 30) for j in range(10, 20) if self.ship.get_cellval(i, j) == 'o' ],
+            8: [(i, j) for i in range(20, 30) for j in range(20, 30) if self.ship.get_cellval(i, j) == 'o' ]
         }
+        # self.regions = {
+        #     0: [(i, j) for i in range(0, 15) for j in range(0, 15) if self.ship.get_cellval(i, j) == 'o' ],
+        #     1: [(i, j) for i in range(0, 15) for j in range(15, 30) if self.ship.get_cellval(i, j) == 'o' ],
+        #     2: [(i, j) for i in range(15, 30) for j in range(0, 15) if self.ship.get_cellval(i, j) == 'o' ],
+        #     3: [(i, j) for i in range(15, 30) for j in range(15, 30) if self.ship.get_cellval(i, j) == 'o' ],
+        # }
         self.current_region = None
                 
         rat_found = 0
@@ -511,7 +520,7 @@ class Bot:
                         
                     max_region = max(self.region_probs, key = self.region_probs.get)
                     # If the max probability region is different from the current, switch to the new region
-                    if self.current_region is None or self.region_probs[max_region]*0.9 > self.region_probs[self.current_region]:
+                    if self.current_region is None or self.region_probs[max_region]*.9 > self.region_probs[self.current_region]:
                         self.current_region = max_region
                     
                     dest = self.chooseNextCell(loc)

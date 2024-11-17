@@ -14,10 +14,10 @@ GRID_WIDTH = SIZE
 GRID_HEIGHT = SIZE
 WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE
 WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE
-RESULT_FOLDER = "sims2"
+RESULT_FOLDER = "sims5"
 
 
-resultFolder = "results_sim2"
+resultFolder = "results_sim5"
         
 def create_folder_if_not_exists(folder_path):
     if not os.path.exists(folder_path):
@@ -25,7 +25,7 @@ def create_folder_if_not_exists(folder_path):
           
 # Function to write data to the appropriate file
 def write_to_file(bot_name, ship_size, alpha, trial, steps):
-    file_path = os.path.join(RESULT_FOLDER, f"{bot_name}.py")
+    file_path = os.path.join(RESULT_FOLDER, f"{bot_name}.txt")
     with open(file_path, "a") as file:
         file.write(f"{ship_size}_{alpha:.2f}_{trial}:{steps}\n")
 

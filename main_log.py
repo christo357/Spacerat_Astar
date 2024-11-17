@@ -58,26 +58,26 @@ rat_init = my_ship.getRatloc()
 # logger.log_metadata()
 
 
-### Bot 1 with stationary rat
-# my_ship.setRatloc(rat_init)
-b1_resultPath = resultFolder+"/b1"
-create_folder_if_not_exists(b1_resultPath)
-b1_path = f"{b1_resultPath}/{SIZE}_{ALPHA}"
-my_bot1s = bot1s.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b1_path)
-getPos = my_bot1s.findPosition()
-bot1s_len = len(my_ship.ratPositions)
+# ### Bot 1 with stationary rat
+# # my_ship.setRatloc(rat_init)
+# b1_resultPath = resultFolder+"/b1"
+# create_folder_if_not_exists(b1_resultPath)
+# b1_path = f"{b1_resultPath}/{SIZE}_{ALPHA}"
+# my_bot1s = bot1s.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b1_path)
+# getPos = my_bot1s.findPosition()
+# bot1s_len = len(my_ship.ratPositions)
 
-if getPos is not (0,0):
-    print("FINDING RAT")
-    steps1s = my_bot1s.findRat()
-    bot1s_rat = my_ship.getRatPositions()
+# if getPos is not (0,0):
+#     print("FINDING RAT")
+#     steps1s = my_bot1s.findRat()
+#     bot1s_rat = my_ship.getRatPositions()
     
 ### Bot 1 with moving rat
 my_ship.setRatloc(rat_init)
 b2_resultPath = resultFolder+"/b2"
 create_folder_if_not_exists(b2_resultPath)
 b2_path = f"{b2_resultPath}/{SIZE}_{ALPHA}"
-my_bot1m = bot1m.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b1_path)
+my_bot1m = bot1m.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b2_path)
 getPos = my_bot1m.findPosition()
 bot1m_len = len(my_ship.ratPositions)
 
@@ -88,19 +88,19 @@ if getPos:
     bot1m_rat = my_ship.getRatloc()
     
     
-## Bot  2 with stationary rat
-my_ship.setRatloc(rat_init)
-b3_resultPath = resultFolder+"/b3"
-create_folder_if_not_exists(b3_resultPath)
-b3_path = f"{b3_resultPath}/{SIZE}_{ALPHA}"
-my_bot2s = bot2s.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b3_path)
-getPos = my_bot2s.findPosition()
-bot2s_len = len(my_ship.ratPositions)
+# ## Bot  2 with stationary rat
+# my_ship.setRatloc(rat_init)
+# b3_resultPath = resultFolder+"/b3"
+# create_folder_if_not_exists(b3_resultPath)
+# b3_path = f"{b3_resultPath}/{SIZE}_{ALPHA}"
+# my_bot2s = bot2s.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b3_path)
+# getPos = my_bot2s.findPosition()
+# bot2s_len = len(my_ship.ratPositions)
 
-if getPos:
-    print("FINDING RAT")
-    steps2s = my_bot2s.findRat()
-    bot2s_rat = my_ship.getRatPositions()
+# if getPos:
+#     print("FINDING RAT")
+#     steps2s = my_bot2s.findRat()
+#     bot2s_rat = my_ship.getRatPositions()
 
 
 
@@ -125,18 +125,18 @@ if getPos:
     
     
     
-print(f"Bot 1s rat len: {bot1s_len}")
-# print(f"Bot 1 rat: {bot1s_rat}")
-print(f"Total steps: bot1s: {steps1s}, rat: {bot1s_rat}")
+# print(f"Bot 1s rat len: {bot1s_len}")
+# # print(f"Bot 1 rat: {bot1s_rat}")
+# print(f"Total steps: bot1s: {steps1s}, rat: {bot1s_rat}")
 
 
 print(f"Bot 1m rat len: {bot1m_len}")
 # print(f"Bot 1 rat: {bot1m_rat}")
-print(f"Total steps: bot1m: {steps1m}, rat: {bot2s_rat}")
+print(f"Total steps: bot1m: {steps1m}, rat: {bot1m_rat}")
 
-print(f"Bot 2s rat len: {bot2s_len}")
-# print(f"Bot 2 rat: {bot2s_rat}")
-print(f"Total steps: bot2s: {steps2s}, rat: {bot2s_rat}")
+# print(f"Bot 2s rat len: {bot2s_len}")
+# # print(f"Bot 2 rat: {bot2s_rat}")
+# print(f"Total steps: bot2s: {steps2s}, rat: {bot2s_rat}")
 
 print(f"Bot 2m rat len: {bot2m_len}")
 # print(f"Bot 2 rat: {bot2m_rat}")

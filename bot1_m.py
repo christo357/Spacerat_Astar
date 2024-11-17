@@ -310,7 +310,7 @@ class Bot:
                     self.belief[r,c] = b
     
     def calcManhattan(self, loc1, loc2):
-       return abs(loc1[0]-loc2[0]) + abs(loc1[0]-loc2[1])
+       return abs(loc1[0]-loc2[0]) + abs(loc1[1]-loc2[1])
     
     def pingProbability(self, loc1 , loc2):
         d = self.calcManhattan(loc1, loc2)
@@ -452,7 +452,7 @@ class Bot:
                     # print(f"Bot position: {loc}")
                     self.setloc(loc[0], loc[1])
                     if loc==loc_rat:
-                        print(f"Rat Found at: {loc} in {self.t} timesteps")
+                        print(f"bot1m, Rat Found at: {loc} in {self.t} timesteps")
                         rat_found = 1
                         break
                     else:

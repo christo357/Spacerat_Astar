@@ -299,7 +299,7 @@ class Bot:
                     self.belief[r,c] = b
     
     def calcManhattan(self, loc1, loc2):
-       return abs(loc1[0]-loc2[0]) + abs(loc1[0]-loc2[1])
+       return abs(loc1[0]-loc2[0]) + abs(loc1[1]-loc2[1])
     
     def pingProbability(self, loc1 , loc2):
         d = self.calcManhattan(loc1, loc2)
