@@ -14,10 +14,10 @@ GRID_WIDTH = SIZE
 GRID_HEIGHT = SIZE
 WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE
 WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE
-RESULT_FOLDER = "sims"
+RESULT_FOLDER = "sims2"
 
 
-resultFolder = "results_sim"
+resultFolder = "results_sim2"
         
 def create_folder_if_not_exists(folder_path):
     if not os.path.exists(folder_path):
@@ -32,9 +32,9 @@ def write_to_file(bot_name, ship_size, alpha, trial, steps):
 
 # Main simulation logic
 create_folder_if_not_exists(RESULT_FOLDER)
-for alpha in [round(i, 2) for i in range(0, 2, 2)]:
+for alpha in [round(i, 2) for i in range(0, 51, 2)]:
     alpha /= 100  # Scale ALPHA to increments of 0.02
-    for trial in range(1, 2):
+    for trial in range(1, 26):
         random_seed = random.randint(0, 10000)
         my_ship = Ship(SIZE, random_seed)
         my_ship.createShip()

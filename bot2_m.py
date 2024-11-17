@@ -342,7 +342,10 @@ class Bot:
         total_belief = np.sum(new_belief)
         if total_belief>0:
             new_belief /= total_belief
-        return new_belief
+            return new_belief
+        else:
+                self.initializeBelief()
+                return self.belief
            
     
     def updateProbList(self):
@@ -371,6 +374,29 @@ class Bot:
             for r_cell, c_cell in dist_cells:
                 new_belief[r_cell, c_cell] += new_p
         self.belief = new_belief.copy()
+        
+    # def chooseNextCellDefault(self, curr_loc):
+    #     r, c = curr_loc
+        
+    #     # Find cells with highest probability
+    #     max_prob = np.max(self.belief)
+    #     high_prob_cells = [
+    #         (i,j) for i,j in self.openCells 
+    #         if self.belief[i,j] > max_prob * 0.9  # Consider cells with prob close to max
+    #     ]
+        
+    #     # Choose closest high probability cell
+    #     min_dist = float('inf')
+    #     best_target = None
+        
+    #     for cell in high_prob_cells:
+    #         dist = self.calcManhattan(curr_loc, cell)
+    #         if dist < min_dist:
+    #             min_dist = dist
+    #             best_target = cell
+                
+    #     return best_target
+    
     
     def chooseNextCell(self, curr_loc):
         r, c = curr_loc
@@ -388,17 +414,26 @@ class Bot:
         
         high_prob_cells = [
             (i,j) for i,j in region_cells
-            if self.belief[i,j] > max_prob * 0.9  # Consider cells with prob close to max
+            if self.belief[i,j] >= max_prob * 0.8  # Consider cells with prob close to max
         ]
         # print(f"high prob cells : {high_prob_cells}")
-                   
+        
+        # if not high_prob_cells:
+        #     max_prob = np.max(self.belief)
+        #     high_prob_cells = [
+        #         (i,j) for i,j in self.openCells 
+        #         if self.belief[i,j] > max_prob * 0.8  # Consider cells with prob close to max
+        #     ]
+            
+            # print("No high probability cells available, choosing random valid cell.")
+            # return random.choice(region_cells) if region_cells else None 
         # Choose closest high probability cell
         min_dist = float('inf')
         best_target = None
         
         for cell in high_prob_cells:
             dist = self.calcManhattan(curr_loc, cell)
-            if dist < min_dist:
+            if dist < min_dist and dist>0:
                 min_dist = dist
                 best_target = cell
                 
@@ -476,16 +511,23 @@ class Bot:
                         
                     max_region = max(self.region_probs, key = self.region_probs.get)
                     # If the max probability region is different from the current, switch to the new region
-                    if self.current_region is None or self.region_probs[max_region] > self.region_probs[self.current_region]:
+                    if self.current_region is None or self.region_probs[max_region]*0.9 > self.region_probs[self.current_region]:
                         self.current_region = max_region
                     
                     dest = self.chooseNextCell(loc)
+                    # if dest == None:
+                    #     dest = self.chooseNextCellDefault(loc)
                     # print(f"dest; {dest}")
                     # region_cells = self.regions[self.current_region]
                     # cell_probs = [(self.belief[i, j], (i, j)) for i, j in region_cells]
                     # cell_probs.sort(reverse=True)  # Sort by probability descending
                     # dest = cell_probs[0][1]  # Cell with the highest probability in the current region
-                    # print(f"\nT: {self.t}, dest: {dest}")
+                    if dest is None:
+                        print(f"belief: {self.belief}")
+                        print(f"region probs: {self.region_probs}")
+                        print(f"current region: {self.current_region}")
+                        print(f"region: {self.regions}")
+                    print(f"\nT: {self.t}, dest: {dest}")
                     astar = Astar((r,c), dest, self.possibleRat,self.ship)
                     path = astar.findPath()
                     if len(path)>0:
@@ -497,7 +539,7 @@ class Bot:
                     # print(f"Bot position: {loc}")
                     self.setloc(loc[0], loc[1])
                     if loc==loc_rat:
-                        print(f"Rat Found at: {loc} in {self.t} timesteps")
+                        print(f"Bot2m, Rat Found at: {loc} in {self.t} timesteps")
                         rat_found = 1
                         break
                     else:

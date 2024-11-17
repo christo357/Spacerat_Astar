@@ -411,7 +411,7 @@ class Bot:
             loc = self.getloc()
             r, c = loc
             if loc==loc_rat:
-                print(f"Rat Found at: {loc} in {self.t} timesteps")
+                print(f"bot1m, Rat Found at: {loc} in {self.t} timesteps")
                 rat_found = 1
                 break
             # self.ship.moveRat(self.random)

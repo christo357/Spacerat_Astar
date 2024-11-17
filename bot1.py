@@ -379,7 +379,7 @@ class Bot:
             r, c = self.getloc()
             loc = (r,c)
             if loc==loc_rat:
-                print(f"Rat Found at: {loc} in {self.t} timesteps")
+                print(f"bot1s, Rat Found at: {loc} in {self.t} timesteps")
                 rat_found = 1
                 break
             else:

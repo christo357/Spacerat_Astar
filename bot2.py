@@ -328,8 +328,6 @@ class Bot:
         total_belief = np.sum(new_belief)
         if total_belief>0:
             new_belief /= total_belief
-        
-            
         return new_belief
            
    
@@ -352,10 +350,16 @@ class Bot:
          
         high_prob_cells = [
             (i,j) for i,j in region_cells
-            if self.belief[i,j] > max_prob * 0.9  # Consider cells with prob close to max
+            if self.belief[i,j] > max_prob * 0.8  # Consider cells with prob close to max
         ]
         # print(f"high prob cells : {high_prob_cells}")
         
+        # if not high_prob_cells:
+        #     max_prob = np.max(self.belief)
+        #     high_prob_cells = [
+        #         (i,j) for i,j in self.openCells 
+        #         if self.belief[i,j] > max_prob * 0.8  # Consider cells with prob close to max
+        #     ]
         
         
                    
@@ -365,7 +369,8 @@ class Bot:
         
         for cell in high_prob_cells:
             dist = self.calcManhattan(curr_loc, cell)
-            if dist < min_dist:
+            
+            if dist < min_dist and dist>0:
                 min_dist = dist
                 best_target = cell
                 
@@ -414,7 +419,7 @@ class Bot:
             (r,c) = loc
             # loc_rat = self.ship.getRatloc()
             if loc==loc_rat:
-                print(f"Rat Found at: {loc} in {self.t} timesteps")
+                print(f"bot2s, Rat Found at: {loc} in {self.t} timesteps")
                 rat_found = 1
                 break
             else:
@@ -444,16 +449,17 @@ class Bot:
                         
                     max_region = max(self.region_probs, key = self.region_probs.get)
                     # If the max probability region is different from the current, switch to the new region
-                    if self.current_region is None or self.region_probs[max_region] > self.region_probs[self.current_region]:
+                    if self.current_region is None or self.region_probs[max_region]*.9 > self.region_probs[self.current_region]:
                         self.current_region = max_region
                     
-                    # region_cells = self.regions[current_region]
+                    # region_cells = self.regions[self.current_region]
                     # cell_probs = [(self.belief[i, j], (i, j)) for i, j in region_cells]
                     # cell_probs.sort(reverse=True)  # Sort by probability descending
                     # dest = cell_probs[0][1]  # Cell with the highest probability in the current region
                     dest = self.chooseNextCell(loc)
-                    
-                    # print(f"\nT: {self.t}, dest: {dest}")
+                    if dest is None:
+                        print(f"belief: {self.belief}")
+                    print(f"\nT: {self.t}, dest: {dest}")
                     astar = Astar((r,c), dest, self.possibleRat,self.ship)
                     path = astar.findPath()
                     
