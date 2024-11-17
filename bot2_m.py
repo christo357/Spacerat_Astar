@@ -439,7 +439,7 @@ class Bot:
         
         loc = self.getloc()
         r, c= loc
-        while rat_found ==0 and self.t<2000:
+        while rat_found ==0:# and self.t<2000:
             self.logger.log_grid_state(self.t, self.getloc(), loc_rat)
             self.t+=1
             loc = self.getloc()
