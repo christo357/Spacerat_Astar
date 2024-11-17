@@ -14,10 +14,10 @@ GRID_WIDTH = SIZE
 GRID_HEIGHT = SIZE
 WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE
 WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE
-RESULT_FOLDER = "sims5"
+RESULT_FOLDER = "sims"
 
 
-resultFolder = "results_sim5"
+resultFolder = "results_sim"
         
 def create_folder_if_not_exists(folder_path):
     if not os.path.exists(folder_path):

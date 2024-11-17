@@ -420,22 +420,6 @@ class Bot:
                     if loc == dest:
                         a_star = 0
                     
-            # self.logger.log_grid_state(self.t, self.getloc(), loc_rat)
-           
-            # with open("rat_results.txt","a") as f:
-            #     f.write(f"timestep t: {t}\n")
-            #     for r in range(0, self.ship.getSize()):
-            #         for c in range(0, self.ship.getSize()):
-            #             # cell = self.ship.get_cell(r,c)
-            #             prob = self.belief[r,c]
-            #             if (r,c) == loc_rat:
-            #                 f.write(f"R")
-            #             elif (r,c) == loc:
-            #                 f.write(f"B")
-            #             else:
-            #                 f.write(f"{prob:.4f} ")
-            #         f.write("\n")
-                    
-            #     f.write("\n\n")
+            
         return self.t
             

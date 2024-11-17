@@ -561,21 +561,7 @@ class Bot:
                    
             self.ship.moveRat(self.random)
 
-            # with open("rat_results.txt","a") as f:
-                # f.write(f"timestep t: {self.t}\n")
-                # for r in range(0, self.ship.getSize()):
-                #     for c in range(0, self.ship.getSize()):
-                #         # cell = self.ship.get_cell(r,c)
-                #         prob = self.belief[r,c]
-                #         if (r,c) == loc_rat:
-                #             f.write(f"R")
-                #         elif (r,c) == loc:
-                #             f.write(f"B")
-                #         else:
-                #             f.write(f"{prob:.4f} ")
-                #     f.write("\n")
-                    
-                # f.write("\n\n")
+            
         return self.t
           
     
@@ -583,76 +569,3 @@ class Bot:
     
     
     
-#     import numpy as np
-
-# # Parameters
-# alpha = 0.1  # Sensitivity of the detector
-# grid_size = (30, 30)  # Ship's grid dimensions
-
-# # Initialize prior belief that the rat is equally likely to be in any cell
-# belief = np.full(grid_size, 1.0 / (grid_size[0] * grid_size[1]))
-
-# # # Function to calculate Manhattan distance between two cells
-# # def manhattan_distance(cell1, cell2):
-# #     return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
-
-# # Function to get the probability of a "ping" based on distance
-# def ping_probability(bot_position, rat_position, alpha):
-#     distance = manhattan_distance(bot_position, rat_position)
-#     return np.exp(-alpha * (distance - 1))
-
-# # Function to generate a "ping" or "no ping" based on the probability
-# def generate_ping(bot_position, rat_position, alpha):
-#     prob_ping = ping_probability(bot_position, rat_position, alpha)
-#     return np.random.rand() < prob_ping  # True if "ping", False if "no ping"
-
-# # Function to update the belief based on whether a ping was received
-# def update_belief(belief, bot_position, ping_received, alpha):
-#     new_belief = np.zeros_like(belief)
-
-#     # Update each cell's probability based on "ping" or "no ping"
-#     for x in range(grid_size[0]):
-#         for y in range(grid_size[1]):
-#             rat_position = (x, y)
-#             prob_ping = ping_probability(bot_position, rat_position, alpha)
-#             likelihood = prob_ping if ping_received else (1 - prob_ping)
-#             new_belief[x, y] = likelihood * belief[x, y]
-
-#     # Normalize the belief to ensure it sums to 1
-#     total_belief = np.sum(new_belief)
-#     if total_belief > 0:
-#         new_belief /= total_belief
-#     else:
-#         # If all probabilities are zero, reset to uniform distribution
-#         new_belief.fill(1.0 / (grid_size[0] * grid_size[1]))
-    
-#     return new_belief
-
-# # Example usage
-# # Initial positions (for demonstration purposes)
-# bot_position = (15, 15)  # Assume bot starts at the center of the grid
-# rat_position = (20, 20)  # Assume rat starts at some random position
-
-# # Generate "ping" or "no ping" based on the current bot and rat positions
-# ping_received = generate_ping(bot_position, rat_position, alpha)
-
-# # Update belief based on the ping result
-# belief = update_belief(belief, bot_position, ping_received, alpha)
-
-# # Output the updated belief grid
-# print("Updated belief grid:")
-# print(belief)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
- 
