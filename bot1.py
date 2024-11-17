@@ -2,6 +2,7 @@ from os import remove
 from queue import PriorityQueue
 import random
 import math
+import string
 
 import numpy as np
 
@@ -10,27 +11,32 @@ from cell import Cell
 from ship import Ship
 from astar import Astar
 from ui import ShipInterface
+from logger import Logger
 
 
 class Bot:
-    def __init__(self,  ship:Ship , r:int, c:int, alpha:float, interface:ShipInterface, seed: int):
+    def __init__(self,  ship:Ship , r:int, c:int, alpha:float, interface:ShipInterface, seed: int, resultPath: string):
         self.random = random.Random(seed)
         self.id = 1
         self.r = r
         self.c = c
+        self.t = 0
         
         self.r_start = r
         self.c_start = c
         
         self.r_k = None
         self.c_k = None
+        self.r_ks = None
+        self.c_ks = None
         self.r_disp = 0
         self.c_disp = 0
         
         
         self.ship = ship
         self.shipSize = self.ship.getSize()
-        self.imgpath = 'bot1.png'
+        self.imgpath = 'images/bot1.png'
+        self.resultPath = resultPath
         self.alpha = alpha
         self.interface = interface
         
@@ -42,6 +48,8 @@ class Bot:
         self.b8neighbors = None
         self.movdirs =''
         self.movdisp = []
+        
+        self.logger = Logger(self.shipSize, self.ship, self.resultPath)
     
     def getStart(self):
         return (self.r_start, self.c_start)
@@ -56,9 +64,13 @@ class Bot:
     def getKnownloc(self):
         return (self.r_k , self.c_k)
     
+    def getKnownStart(self):
+        return (self.r_ks, self.c_ks)
+    
     def updateknownloc(self):
         self.r_k, self.c_k,_ = self.possibleloc[0]
-    
+        self.r_ks = self.r_k
+        self.c_ks = self.c_k
         print(f"Known loc: {self.r_k, self.c_k}")
         print(f"Start loc : {self.r_start, self.c_start}")
         self.r_k += self.r_disp
@@ -257,14 +269,14 @@ class Bot:
     def findPosition(self):
         self.createPossibleloc()
         loc_rat = self.ship.getRatloc()
+        self.logger.log_metadata()
         loc_found = 0
         sensed = 0  
-        t= 0 
-        while loc_found==0 and t<200:
-            
+        while loc_found==0 :#and self.t<200:
+            self.logger.log_grid_state(self.t, self.getloc(), loc_rat)
             print("\nCurr_positon; ", self.getloc())
             self.interface.update_display(self.getloc(), loc_rat)
-            t +=1
+            self.t +=1
             if sensed == 0:
                 self.senseNeighbors() 
                 sensed = 1
@@ -277,11 +289,14 @@ class Bot:
                 loc_found = 1
                 self.updateknownloc()
                 
+            
         if (self.r_k, self.c_k) != self.getloc():
             print("known location differ from original")
-            return False
+            return (0,0)
         else:
-            return True
+            self.logger.log_grid_state(self.t, self.getloc(), loc_rat, self.getKnownStart())
+            return self.getKnownStart()
+
     
     def initializeBelief(self):
         b = 1.0/(len(self.openCells))

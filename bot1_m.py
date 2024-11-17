@@ -31,7 +31,7 @@ class Bot:
         
         self.ship = ship
         self.shipSize = self.ship.getSize()
-        self.imgpath = 'bot1.png'
+        self.imgpath = 'images/bot1.png'
         self.alpha = alpha
         self.interface = interface
         
@@ -483,7 +483,7 @@ class Bot:
                     a_star = 1
                     
                 else:
-                    print(f"Path: {path}")
+                    # print(f"Path: {path}")
                     loc = path[0]
                     path.remove(loc)
                     print(f"Bot position: {loc}")

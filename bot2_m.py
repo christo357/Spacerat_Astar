@@ -31,7 +31,7 @@ class Bot:
         
         self.ship = ship
         self.shipSize = self.ship.getSize()
-        self.imgpath = 'bot1.png'
+        self.imgpath = 'images/bot2.png'
         self.alpha = alpha
         self.interface = interface
         
@@ -388,7 +388,37 @@ class Bot:
                 new_belief[r_cell, c_cell] += new_p
             self.belief = new_belief.copy()
     
-    
+    def chooseNextCell(self, curr_loc):
+        r, c = curr_loc
+        
+        # Find cells with highest probability
+        # max_prob = np.max(self.belief)
+        
+        region_cells = self.regions[self.current_region]
+        cell_probs = [(self.belief[i, j], (i, j)) for i, j in region_cells]
+        cell_probs.sort(reverse=True)  # Sort by probability descending
+        max_prob = cell_probs[0][0]  # Cell with the highest probability in the current region
+         
+        high_prob_cells = [
+            (i,j) for i,j in region_cells
+            if self.belief[i,j] > max_prob * 0.9  # Consider cells with prob close to max
+        ]
+        
+        
+        
+        
+                   
+        # Choose closest high probability cell
+        min_dist = float('inf')
+        best_target = None
+        
+        for cell in high_prob_cells:
+            dist = self.calcManhattan(curr_loc, cell)
+            if dist < min_dist:
+                min_dist = dist
+                best_target = cell
+                
+        return best_target
     
     def findRat(self):
         loc_rat = self.ship.getRatloc()
@@ -398,7 +428,7 @@ class Bot:
                 f.write(f"Bot Pos: {self.getloc()}\n")
                 
         # Divide the ship into 9 regions (3x3 grid of 10x10 cells each)
-        regions = {
+        self.regions = {
             0: [(i, j) for i in range(0, 10) for j in range(0, 10)],
             1: [(i, j) for i in range(0, 10) for j in range(10, 20)],
             2: [(i, j) for i in range(0, 10) for j in range(20, 30)],
@@ -409,98 +439,149 @@ class Bot:
             7: [(i, j) for i in range(20, 30) for j in range(10, 20)],
             8: [(i, j) for i in range(20, 30) for j in range(20, 30)]
         }
-        current_region = None
-        
+        self.current_region = None
+                
         t=0
         rat_found = 0
         self.initializeBelief()
-        a_star = 0
-        r, c= self.getloc()
-        while rat_found ==0 and t<100:
-            t+=1
-            self.ship.moveRat(self.random)
-            
-            # r, c = self.getloc()
-            region_probs = {}      
-            
-            prob_list = self.updateProbList()
-            
-            # find the total probability for each region
-            for region, cells in regions.items():
-                region_probs[region] = sum(self.belief[i, j] for i, j in cells)
-                
-            max_region = max(region_probs, key = region_probs.get)
-            threshold = 0.05*region_probs[max_region]
-            # If the max probability region is different from the current, switch to the new region
-            if current_region is None or region_probs[max_region] > region_probs[current_region]+ threshold:
-                current_region = max_region
-            
-            region_cells = regions[current_region]
-            cell_probs = [(self.belief[i, j], (i, j)) for i, j in region_cells]
-            cell_probs.sort(reverse=True)  # Sort by probability descending
-            dest = cell_probs[0][1]  # Cell with the highest probability in the current region
         
+        a_star = 0
+        move = 0
+        
+        loc = self.getloc()
+        r, c= loc
+        while rat_found ==0 and t<2000:
+            t+=1
+            loc = self.getloc()
+            (r,c) = loc
+            # loc_rat = self.ship.getRatloc()
+            if loc==loc_rat:
+                print(f"Rat Found at: {loc} in {t} timesteps")
+                rat_found = 1
+                break
+            # else:
+            #     self.belief[r,c] = 0
+            #     if loc in self.possibleRat:
+            #             self.possibleRat.remove(loc)
+                        
+            if move==0:
+                move = 1
+                ping_received = self.generate_ping((r,c), loc_rat)
+                # update probabilities of the cells
+                self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+                self.distributeCellProb()
+            # if move ==0:
+            #     ping_received = self.generate_ping((r,c), loc_rat)
+                
+            #     self.ship.moveRat(self.random)
+            #     # update probabilities of the cells
+            #     self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+            #     self.distributeCellProb()
             
+            else:
+                move =0
+                if a_star ==0:
+                    a_star = 1
+                    # r, c = self.getloc()
+                    self.region_probs = {} 
+                    prob_list = self.updateProbList()
+                    
+                    # find the total probability for each region
+                    for region, cells in self.regions.items():
+                        self.region_probs[region] = sum(self.belief[i, j] for i, j in cells)
+                        
+                    max_region = max(self.region_probs, key = self.region_probs.get)
+                    # If the max probability region is different from the current, switch to the new region
+                    if self.current_region is None or self.region_probs[max_region] > self.region_probs[self.current_region]:
+                        self.current_region = max_region
+                    
+                    # dest = self.chooseNextCell(loc)
+                    region_cells = self.regions[self.current_region]
+                    cell_probs = [(self.belief[i, j], (i, j)) for i, j in region_cells]
+                    cell_probs.sort(reverse=True)  # Sort by probability descending
+                    dest = cell_probs[0][1]  # Cell with the highest probability in the current region
+                    print(f"\nT: {t}, dest: {dest}")
+                    astar = Astar((r,c), dest, self.possibleRat,self.ship)
+                    path = astar.findPath()
+                else:
+                    loc = path[0]
+                    path.remove(loc)
+                    print(f"Bot position: {loc}")
+                    self.setloc(loc[0], loc[1])
+                    if loc==loc_rat:
+                        print(f"Rat Found at: {loc} in {t} timesteps")
+                        rat_found = 1
+                        break
+                    else:
+                        # self.possibleRat.remove(loc)
+                        r, c = loc
+                        self.belief[r,c] = 0
+                        # ping_received = self.generate_ping((r,c), loc_rat)
+                        # t+=1
+                        # self.ship.moveRat(self.random)
+                        # # update probabilities of the cells
+                        # self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+                        # self.distributeCellProb()
+                        
+                        # prob_list = self.updateProbList()
+                    if loc == dest:
+                        a_star = 0
             # prob_list = self.updateProbList()
             # max_i = prob_list.index(max(prob_list))
             # dest = self.possibleRat[max_i]
-            r, c = self.getloc()
-            if (r, c) != loc_rat:
-                if (r,c) in self.possibleRat:
-                    self.belief[r,c] = 0
+            
+            # if (r, c) != loc_rat:
+            #     if (r,c) in self.possibleRat:
+            #         self.belief[r,c] = 0
                     # self.possibleRat.remove((r,c))
            
             
-            ping_received = self.generate_ping((r,c), loc_rat)
-            t+=1
+            
+            
+            # prob_list = self.updateProbList()
+            # print(f"\nT: {t}, dest: {dest}")
+            # astar = Astar((r,c), dest, self.possibleRat,self.ship)
+            # path = astar.findPath()
+            
+            # for loc in path:
+            #     t += 1
+            #     self.ship.moveRat(self.random)
+            #     print(f"Bot position: {loc}")
+            #     self.setloc(loc[0], loc[1])
+            #     if loc==dest:
+            #         print(f"Rat Found at: {loc} in {t} timesteps")
+            #         rat_found = 1
+            #         break
+            #     else:
+            #         # self.possibleRat.remove(loc)
+            #         self.belief[r,c] = 0
+            #         ping_received = self.generate_ping((r,c), loc_rat)
+            #         t+=1
+            #         self.ship.moveRat(self.random)
+            #         # update probabilities of the cells
+            #         self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
+            #         self.distributeCellProb()
+                    
+            #         prob_list = self.updateProbList()
+                    
+                    
             self.ship.moveRat(self.random)
-            # update probabilities of the cells
-            self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
-            self.distributeCellProb()
-            
-            prob_list = self.updateProbList()
-            print(f"\nT: {t}, dest: {dest}")
-            astar = Astar((r,c), dest, self.possibleRat,self.ship)
-            path = astar.findPath()
-            
-            for loc in path:
-                t += 1
-                self.ship.moveRat(self.random)
-                print(f"Bot position: {loc}")
-                self.setloc(loc[0], loc[1])
-                if loc==dest:
-                    print(f"Rat Found at: {loc} in {t} timesteps")
-                    rat_found = 1
-                    break
-                else:
-                    # self.possibleRat.remove(loc)
-                    self.belief[r,c] = 0
-                    ping_received = self.generate_ping((r,c), loc_rat)
-                    t+=1
-                    self.ship.moveRat(self.random)
-                    # update probabilities of the cells
-                    self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
-                    self.distributeCellProb()
+
+            with open("rat_results.txt","a") as f:
+                f.write(f"timestep t: {t}\n")
+                for r in range(0, self.ship.getSize()):
+                    for c in range(0, self.ship.getSize()):
+                        # cell = self.ship.get_cell(r,c)
+                        prob = self.belief[r,c]
+                        if (r,c) == loc_rat:
+                            f.write(f"R")
+                        elif (r,c) == loc:
+                            f.write(f"B")
+                        else:
+                            f.write(f"{prob:.4f} ")
+                    f.write("\n")
                     
-                    prob_list = self.updateProbList()
-                    
-                    
-            
-                with open("rat_results.txt","a") as f:
-                    f.write(f"timestep t: {t}\n")
-                    for r in range(0, self.ship.getSize()):
-                        for c in range(0, self.ship.getSize()):
-                            # cell = self.ship.get_cell(r,c)
-                            prob = self.belief[r,c]
-                            if (r,c) == loc_rat:
-                                f.write(f"R")
-                            elif (r,c) == loc:
-                                f.write(f"B")
-                            else:
-                                f.write(f"{prob:.4f} ")
-                        f.write("\n")
-                        
-                    f.write("\n\n")
+                f.write("\n\n")
         return t
           
     

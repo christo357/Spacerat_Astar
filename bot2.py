@@ -30,7 +30,7 @@ class Bot:
         
         self.ship = ship
         self.shipSize = self.ship.getSize()
-        self.imgpath = 'bot1.png'
+        self.imgpath = 'images/bot2.png'
         self.alpha = alpha
         self.interface = interface
         

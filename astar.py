@@ -40,7 +40,7 @@ class Astar:
                     self.h[r,c] = h
                     
     def tracePath(self):
-        print(f"Tracing path{self.dest}\n")
+        # print(f"Tracing path{self.dest}\n")
         path = []
         r, c = self.dest
         while r is not None and c is not None:

@@ -5,6 +5,7 @@ class Logger():
         self.size = size
         self.ship = ship
         self.resultPath = resultPath
+        self.bot_start = (0,0)
 
     # Function to log metadata (grid size, bot, and switch location) to result.txt
     def log_metadata(self):
@@ -18,6 +19,29 @@ class Logger():
             file.write(f"Initial Bot Location: ({bot_row}, {bot_col})\n")
             file.write(f"Rat Location: ({rat_row}, {rat_col})\n")
             file.write("-" * 40 + "\n")
+            
+    def log_grid_state(self, timestep, bot, rat, bot_start=(0,0)):
+        with open(self.resultPath, "a") as file:
+            file.write(f"Timestep: {timestep}\n")
+            for row in range(self.size):
+                for col in range(self.size):
+                    # if (row, col) == bot:
+                    #     v = 'B'
+                    # elif (row, col) == rat:
+                    #     v = "R"
+                    # else:
+                    v = self.ship.get_cellval(row, col)
+                    file.write(f"{v} ")
+                file.write("\n")
+            
+            self.bot_start = bot_start
+            file.write(f"Bot start: {bot_start}\n")
+            file.write(f"Bot: {bot}\n")
+            file.write(f"Rat: {rat}\n")
+            # for i in range(0, bot_count):
+            #     bot_row, bot_col = ship.getBotLoc(i)
+            #     file.write(f"Bot {i+1}: ({bot_row}, {bot_col})\n")
+            file.write("-" * 40 + "\n")      
             
             
     # Function to log the grid state to result.txt at each timestep
@@ -40,14 +64,14 @@ class Logger():
             file.write(f"({rat_row}, {rat_col})")
             file.write("-" * 40 + "\n")
             
-    def log_grid_state(self, timestep, botcount):
-        with open(self.resultPath, "a") as file:
-            file.write(f"Timestep: {timestep}\n")
-            for row in range(self.size):
-                for col in range(self.size):
-                    file.write(self.ship.get_cellval(row, col))
-                file.write("\n")
+    # def log_grid_state(self, timestep, botcount):
+    #     with open(self.resultPath, "a") as file:
+    #         file.write(f"Timestep: {timestep}\n")
+    #         for row in range(self.size):
+    #             for col in range(self.size):
+    #                 file.write(self.ship.get_cellval(row, col))
+    #             file.write("\n")
             
-            file.write("-"*40+"\n")
+    #         file.write("-"*40+"\n")
             
             

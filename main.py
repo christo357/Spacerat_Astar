@@ -58,18 +58,18 @@ if getPos:
     print("FINDING RAT")
     steps1s = my_bot1s.findRat()
     bot1s_rat = my_ship.getRatPositions()
-    # bot1s_rat = my
+    
 
-# ### Bot  2 with moving rat
-# # my_ship.setRatloc(rat_init)
-# my_bot2 = bot2s.Bot(my_ship, r_b, c_b,alpha=ALPHA, interface=interface1, seed=RANDOM_SEED)
-# getPos = my_bot2.findPosition()
-# bot2_len = len(my_ship.ratPositions)
+## Bot  2 with stationary rat
+my_ship.setRatloc(rat_init)
+my_bot2s = bot2s.Bot(my_ship, r_b, c_b,alpha=ALPHA, interface=interface1, seed=RANDOM_SEED)
+getPos = my_bot2s.findPosition()
+bot2s_len = len(my_ship.ratPositions)
 
-# if getPos:
-#     print("FINDING RAT")
-#     steps2 = my_bot2.findRat()
-#     bot2_rat = my_ship.getRatPositions()
+if getPos:
+    print("FINDING RAT")
+    steps2s = my_bot2s.findRat()
+    bot2s_rat = my_ship.getRatPositions()
 
 
 
@@ -83,18 +83,21 @@ bot1m_len = len(my_ship.ratPositions)
 if getPos:
     print("FINDING RAT")
     steps1m = my_bot1m.findRat()
-    bot1m_rat = my_ship.getRatPositions()
+    bot1m_ratpos = my_ship.getRatPositions()
+    bot1m_rat = my_ship.getRatloc()
 
-# ### Bot  2 with moving rat
-# my_ship.setRatloc(rat_init)
-# my_bot2 = bot2m.Bot(my_ship, r_b, c_b,alpha=ALPHA, interface=interface1, seed=RANDOM_SEED)
-# getPos = my_bot2.findPosition()
-# bot2_len = len(my_ship.ratPositions)
+### Bot  2 with moving rat
+my_ship.setRatloc(rat_init)
+my_bot2m = bot2m.Bot(my_ship, r_b, c_b,alpha=ALPHA, interface=interface1, seed=RANDOM_SEED)
+getPos = my_bot2m.findPosition()
+bot2m_len = len(my_ship.ratPositions)
 
-# if getPos:
-#     print("FINDING RAT")
-#     steps2 = my_bot2.findRat()
-#     bot2_rat = my_ship.getRatPositions()
+if getPos:
+    print("FINDING RAT")
+    steps2m = my_bot2m.findRat()
+    bot2m_ratpos = my_ship.getRatPositions()
+    bot2m_rat = my_ship.getRatloc()
+    
     
     
 print(f"Bot 1 rat len: {bot1s_len}")
@@ -104,15 +107,15 @@ print(f"Total steps: bot1: {steps1s}, rat: {bot1s_rat}")
 
 print(f"Bot 1 rat len: {bot1m_len}")
 # print(f"Bot 1 rat: {bot1m_rat}")
-print(f"Total steps: bot1: {steps1m}, rat: {my_ship.getRatloc()}")
+print(f"Total steps: bot1: {steps1m}, rat: {bot2s_rat}")
 
-# print(f"Bot 2 rat len: {bot2s_len}")
-# # print(f"Bot 2 rat: {bot2s_rat}")
-# print(f"Total steps: bot2: {steps2s}, rat: {my_ship.getRatloc()}")
+print(f"Bot 2 rat len: {bot2s_len}")
+# print(f"Bot 2 rat: {bot2s_rat}")
+print(f"Total steps: bot2: {steps2s}, rat: {bot1m_rat}")
 
-# print(f"Bot 2 rat len: {bot2m_len}")
+print(f"Bot 2 rat len: {bot2m_len}")
 # print(f"Bot 2 rat: {bot2m_rat}")
-# print(f"Total steps: bot2: {steps2m}, rat: {my_ship.getRatloc()}")
+print(f"Total steps: bot2: {steps2m}, rat: {bot2m_rat}")
 
 
 
