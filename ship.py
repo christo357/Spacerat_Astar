@@ -10,9 +10,6 @@ class Ship:
         self.blocked = []
         self.blocked1 = []
         self.deadend = []
-        # self.firecells = []
-        # self.q = q           ### set it no. of cells on fire/ total number of cells
-        # self.fire = Fire(self.q)
         self.start_botloc = None
         self.botloc = [None, None, None, None]
         self.ratloc = None
@@ -25,12 +22,10 @@ class Ship:
     
     def get_cell(self, r,c) -> Cell:
         return self.grid[r][c]
-        
-
+    
     def get_cellval(self, r, c):
         return self.grid[r][c].get_val()
     
-
     def set_cellval(self,r,c, val):
         self.grid[r][c].set_val(val)
         
@@ -38,7 +33,6 @@ class Ship:
         self.displayNumbers()
         return self.open
     
-   
     def getStartBotLoc(self):
         return self.start_botloc
         
@@ -150,7 +144,6 @@ class Ship:
                 self.set_cellval(r, c, 'b')
                 
     def getInnerBlockedNeighbours(self, r,c):
-        # def getNeighbors(self, r,c, celltype):
         neighbourList = []
         if r>1:
             if self.get_cellval(r-1, c) == 'b':
@@ -171,7 +164,6 @@ class Ship:
         r_init = random.randint(1, self.d-2)
         c_init = random.randint(1, self.d-2)
         self.set_cellval(r_init,c_init, 'o')
-        # self.grid[r_init][c_init].set_val('o') 
         
         for r in range(1,self.d-1):
             for c in range(1,self.d-1):
@@ -198,7 +190,7 @@ class Ship:
                         self.deadend.append((r,c))
         
        
-        self.displayNumbers()           #########
+        self.displayNumbers()          
        
         open_count = len(self.deadend)//2
         cell_opened = 0
@@ -207,43 +199,18 @@ class Ship:
             dead_neighbors = []
             for r,c in self.deadend:
                 dead_neighbors.extend(self.getInnerBlockedNeighbours(r,c)) 
-                # for cell in dead_neighbors:
-                #     if cell
             (r_new, c_new) = random.choice(dead_neighbors)
-            # print(f"r, c{r_new}, {c_new}")
             self.set_cellval(r_new, c_new, 'o')
             cell_opened += 1
-            
-            # print(cell_opened, open_count)
             self.deadend = []
             for r in range(1,self.d-1):
                 for c in range(1,self.d-1):
                     if self.get_cellval(r,c) == 'o':
                         if self.countNeighbors(r,c, 'o')==1 :
                             self.deadend.append((r,c))
-        
-        # self.blockOuter()
-        self.displayNumbers()             #############
+        self.displayNumbers()             
         self.calcBlockNeighbours()
-        # self.displayShip()
         self.createRat()
-        
-        
-    
-    # def spreadFire(self):
-    #     self.displayNumbers()
-    #     possibleCells = self.getOpenCells()
-    #     fireCells = self.getFireCells()
-    #     if self.getRatloc() in possibleCells:
-    #         possibleCells.remove(self.getRatloc())
-    #     for r_open, c_open in possibleCells:
-    #         fireNeighbors = self.getNeighbors(r_open, c_open, 'f')
-    #         act_fireNeighbors = [n for n in fireNeighbors if n in fireCells]
-    #         k = len(act_fireNeighbors)
-    #         if k>0:
-    #             if self.fire.calcFire(k):
-    #                 self.set_cellval(r_open, c_open, 'f')
-    #     self.displayNumbers()
         
             
     def calcHeuristic(self):
@@ -262,7 +229,6 @@ class Ship:
         for r in range(0,self.d):
             print()
             for c in range(0, self.d):
-                # print(f"{self.grid[r][c].get_b8neighbors():<3}", end=' ')
                 print(f"{self.grid[r][c].get_val():<4}", end=' ')
         
         print(f'Switch: {self.getRatloc()}')

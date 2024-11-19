@@ -59,13 +59,10 @@ b1_resultPath = resultFolder+"/b1"
 create_folder_if_not_exists(b1_resultPath)
 b1_path = f"{b1_resultPath}/{SIZE}_{ALPHA}"
 my_bot1s = bot1s.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b1_path)
-getPos = my_bot1s.findPosition()
-bot1s_len = len(my_ship.ratPositions)
-
-if getPos is not (0,0):
-    print("FINDING RAT")
-    steps1s = my_bot1s.findRat()
-    bot1s_rat = my_ship.getRatPositions()
+b1s_getPos = my_bot1s.findPosition()
+# bot1s_len = len(my_ship.ratPositions)
+steps1s = my_bot1s.findRat()
+bot1s_rat = my_ship.getRatPositions()
     
 ### Bot 1 with moving rat
 my_ship.setRatloc(rat_init)
@@ -73,15 +70,12 @@ b2_resultPath = resultFolder+"/b2"
 create_folder_if_not_exists(b2_resultPath)
 b2_path = f"{b2_resultPath}/{SIZE}_{ALPHA}"
 my_bot1m = bot1m.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b2_path)
-getPos = my_bot1m.findPosition()
-bot1m_len = len(my_ship.ratPositions)
+b1m_getPos = my_bot1m.findPosition()
+# bot1m_len = len(my_ship.ratPositions)
+steps1m = my_bot1m.findRat()
+bot1m_ratpos = my_ship.getRatPositions()
+bot1m_rat = my_ship.getRatloc()
 
-if getPos:
-    print("FINDING RAT")
-    steps1m = my_bot1m.findRat()
-    bot1m_ratpos = my_ship.getRatPositions()
-    bot1m_rat = my_ship.getRatloc()
-    
     
 ## Bot  2 with stationary rat
 my_ship.setRatloc(rat_init)
@@ -89,13 +83,9 @@ b3_resultPath = resultFolder+"/b3"
 create_folder_if_not_exists(b3_resultPath)
 b3_path = f"{b3_resultPath}/{SIZE}_{ALPHA}"
 my_bot2s = bot2s.Bot(my_ship, r_b, c_b,alpha=ALPHA, seed=RANDOM_SEED, resultPath = b3_path)
-getPos = my_bot2s.findPosition()
-bot2s_len = len(my_ship.ratPositions)
-
-if getPos:
-    print("FINDING RAT")
-    steps2s = my_bot2s.findRat()
-    bot2s_rat = my_ship.getRatPositions()
+b2s_getPos = my_bot2s.findPosition()
+steps2s = my_bot2s.findRat()
+bot2s_rat = my_ship.getRatPositions()
 
 
 
@@ -109,43 +99,42 @@ b4_resultPath = resultFolder+"/b4"
 create_folder_if_not_exists(b4_resultPath)
 b4_path = f"{b4_resultPath}/{SIZE}_{ALPHA}"
 my_bot2m = bot2m.Bot(my_ship, r_b, c_b,alpha=ALPHA,  seed=RANDOM_SEED, resultPath = b4_path)
-getPos = my_bot2m.findPosition()
-bot2m_len = len(my_ship.ratPositions)
-
-if getPos:
-    print("FINDING RAT")
-    steps2m = my_bot2m.findRat()
-    bot2m_ratpos = my_ship.getRatPositions()
-    bot2m_rat = my_ship.getRatloc()
+b2m_getPos = my_bot2m.findPosition()
+steps2m = my_bot2m.findRat()
+bot2m_ratpos = my_ship.getRatPositions()
+bot2m_rat = my_ship.getRatloc()
     
     
 print("Baseline bot (stationary  rat)")
 print("------------------------------")
-print(f"Baseline bot (stationary  rat) len: {bot1s_len}")
+# print(f"Baseline bot (stationary  rat) len: {bot1s_len}")
 # print(f"Bot 1 rat: {bot1s_rat}")
-print(f"Total steps:  {steps1s}, ")
-print(f"found rat at: {bot1s_rat}")
+print(f"Steps for localization: {b1s_getPos}")
+print(f"Total steps:  {steps1s}, rat found at: {bot1s_rat}")
+# print(f"found rat at: {bot1s_rat}")
 
 print()
 print("Baseline bot (moving  rat)")
 print("------------------------------")
-print(f"Baseline bot (moving  rat) len: {bot1m_len}")
+# print(f"Baseline bot (moving  rat) len: {bot1m_len}")
 # print(f"Bot 1 rat: {bot1m_rat}")
-print(f"Total steps:  {steps1m},")
-print(f"rat: {bot1m_rat}")
+print(f"Steps for localization: {b1m_getPos}")
+print(f"Total steps:  {steps1m}, rat found at: {bot1m_rat}")
 
 print()
 print("Improved bot (moving  rat)")
 print("------------------------------")
-print(f"Improved bot (moving  rat) len: {bot2s_len}")
+# print(f"Improved bot (moving  rat) len: {bot2s_len}")
+print(f"Steps for localization: {b2s_getPos}")
 # print(f"Bot 2 rat: {bot2s_rat}")
-print(f"Total steps: bot2s: {steps2s}, rat: {bot2s_rat}")
+print(f"Total steps: bot2s: {steps2s}, rat found at: {bot2s_rat}")
 
 print()
 print("Improved bot (moving  rat)")
 print("------------------------------")
-print(f"Improved bot (moving  rat)len: {bot2m_len}")
+# print(f"Improved bot (moving  rat)len: {bot2m_len}")
+print(f"Steps for localization: {b2m_getPos}")
 # print(f"Bot 2 rat: {bot2m_rat}")
-print(f"Total steps: bot2m: {steps2m}, rat: {bot2m_rat}")
+print(f"Total steps: bot2m: {steps2m}, rat found at: {bot2m_rat}")
 
 

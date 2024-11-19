@@ -69,14 +69,8 @@ class Bot:
         self.r_k, self.c_k,_ = self.possibleloc[0]
         self.r_ks = self.r_k
         self.c_ks = self.c_k
-        # print(f"Known loc: {self.r_k, self.c_k}")
-        # print(f"Start loc : {self.r_start, self.c_start}")
         self.r_k += self.r_disp
         self.c_k += self.c_disp
-        # print(f"Known loc: {self.r_k, self.c_k}")
-        # print(f"curr loc : {self.r, self.c}")
-        
-    
         
     def invalidposition(self, r, c):
         if 0<r<self.ship.getSize()-1 and 0<c<self.ship.getSize()-1:
@@ -125,7 +119,6 @@ class Bot:
             r_disp (_type_): displacement of bot from initial row
             c_disp (_type_): displacement of bot from initial column
         """
-        # r_start,c_start = self.getStart()
         r, c = (self.r_start+self.r_disp, self.c_start+self.c_disp)
         
         count = 0
@@ -147,7 +140,6 @@ class Bot:
             count += 1
         self.b8neighbors = count
         self.updatePossibleLocations()
-        # return 1
         
     def updatePossibleLocations(self):
         remove_list = []
@@ -164,8 +156,6 @@ class Bot:
                 if map_cell.get_b8neighbors()!= self.b8neighbors:
                     remove_list.append((r_map, c_map))
                     self.possibleloc = [item for item in self.possibleloc if not (item[0]==r_map and item[1]==c_map)]
-        # print(f"Neighbours removed in sensing: {remove_list}")
-        # print(f"possibleloc after sensing: {self.possibleloc}")
             
     def detectCommonDir(self):
         """Detect the most common open direction in the map the bot can move"""
@@ -182,27 +172,14 @@ class Bot:
         r_disp, c_disp = (0,0)
         if dir == 'u':
             r_disp, c_disp = (-1,0)
-            # r_n = r+1
-            # c_n = c
         if dir == 'd':
             r_disp, c_disp = (1,0)
-            # r_n = r-1
-            # c_n = c
         if dir == 'l':
             r_disp, c_disp = (0,-1)
-            # r_n = r
-            # c_n = c+1
         if dir == 'r':
             r_disp, c_disp = (0,1)
-            # r_n = r
-            # c_n = c-1
-        # else:
-        #     return (0,0)
-        # print(f"Possibleloc: {self.possibleloc}")
-        # print("len: ", len(self.possibleloc))
         
         if self.ship.get_cellval(r+r_disp, c+c_disp) == 'b':
-            # print("blocked")
             remove_blocked = []
             for r1,c1,dir1 in self.possibleloc:
                 
@@ -216,8 +193,6 @@ class Bot:
                     if dir in dir2:
                         remove_blocked.append((r1,c1))
                         self.possibleloc.remove((r1,c1, dir1))
-                       
-            # print(f"Removed in blocking: {remove_blocked}")
             return (0, 0)
         else:
             
@@ -244,7 +219,6 @@ class Bot:
             self.movdisp.append((r_disp, c_disp))
             self.r_disp += r_disp
             self.c_disp += c_disp
-            # print("tot_ disp: ", self.r_disp, self.c_disp)
             print(self.getloc())
             return (r_disp, c_disp)
 
@@ -264,8 +238,6 @@ class Bot:
         sensed = 0  
         while loc_found==0 :
             self.logger.log_grid_state(self.t, self.getloc(), loc_rat)
-            # print("\nCurr_positon; ", self.getloc())
-            # self.interface.update_display(self.getloc(), loc_rat)
             self.t +=1
             if sensed == 0:
                 self.senseNeighbors() 
@@ -281,11 +253,10 @@ class Bot:
                 
             
         if (self.r_k, self.c_k) != self.getloc():
-            # print("known location differ from original")
-            return (0,0)
+            return 0
         else:
             self.logger.log_grid_state(self.t, self.getloc(), loc_rat, self.getKnownStart())
-            return self.getKnownStart()
+            return self.t
 
     
     def initializeBelief(self):
@@ -341,8 +312,6 @@ class Bot:
     
     def chooseNextCell(self, curr_loc):
         r, c = curr_loc
-        
-        # Find cells with highest probability
         max_prob = np.max(self.belief)
         high_prob_cells = [
             (i,j) for i,j in self.openCells 
@@ -364,9 +333,6 @@ class Bot:
     def findRat(self):
         loc_rat = self.ship.getRatloc()
         print(f"RatLoc: {loc_rat}")
-        # with open("rat_results.txt","w") as f:
-        #         f.write(f"Ratloc : {loc_rat}\n")
-        #         f.write(f"Bot Pos: {self.getloc()}\n")
         rat_found = 0
         self.initializeBelief()
         a_star = 0
@@ -386,11 +352,9 @@ class Bot:
                 self.belief[r,c] = 0
                 if loc in self.possibleRat:
                         self.possibleRat.remove(loc)
-                        # self.belief[r,c] = 0
             
             if move==0:
                 ping_received = self.generate_ping((r,c), loc_rat)
-                # update probabilities of the cells
                 self.belief = self.updateCellProb(currloc= (r,c), ping_received=ping_received)
                 prob_list = self.updateProbList()
                 move = 1
@@ -401,25 +365,16 @@ class Bot:
                     a_star=1
                     prob_list = self.updateProbList()
                     dest = self.chooseNextCell(loc)
-                    
-                    # print(f"\nT: {self.t}, dest: {dest}, botpos: {loc}")
                     astar = Astar((r,c), dest, self.possibleRat,self.ship)
                     path = astar.findPath()
-                    
-                    
                 else:
-                    # print(f"Path : {path}")
-                    
                     loc = path[0]
                     path.remove(loc)
-                    # print(f"Bot position: {loc}")
                     self.setloc(loc[0], loc[1])
                     if loc in self.possibleRat:
                         self.possibleRat.remove(loc)
                         self.belief[r,c] = 0
                     if loc == dest:
                         a_star = 0
-                    
-            
         return self.t
             
