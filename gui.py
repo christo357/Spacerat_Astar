@@ -1,106 +1,139 @@
+""" code file of the gui interface for visualizing the projects
+"""
+
 import pygame
 import sys
+import re
+from time import sleep
 from multiprocessing import Process
 
-class GridGUI:
-    def __init__(self, file_name, window_title):
-        self.file_name = file_name
-        self.window_title = window_title
-        self.grid = []
+# Colors (RGB)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+
+class MultiGridGUI:
+    def __init__(self, file_data, window_title):
+        self.file_data = file_data  # List of tuples: [(file_name, bot_name), ...]
+        self.grid_size = (30, 30)  # Fixed grid size
+        self.cell_size = 10
+        self.screen_size = (self.grid_size[0] * self.cell_size * 2, 
+                            self.grid_size[1] * self.cell_size * 2)
+        self.bot_images = {}
+        self.rat_images = {}
         self.timesteps = []
-        self.bot_position = (0, 0)
-        self.rat_position = (0, 0)
-        self.bot_start_found = False
-        self.cell_size = 20
-        self.margin = 5
+        self.current_timestep = 0  # Initialize current timestep
+        self.running = True
+        pygame.init()
+        self.screen = pygame.display.set_mode(self.screen_size)
+        pygame.display.set_caption(window_title)
+        self.load_assets()
+        self.parse_files()
 
-        # Read the grid and positions from the file
-        self.read_file()
+    def load_assets(self):
+        bot_image = pygame.image.load("images/bot1.png").convert_alpha()
+        bot_image = pygame.transform.scale(bot_image, (self.cell_size, self.cell_size))
+        rat_image = pygame.image.load("images/rat.png").convert_alpha()
+        rat_image = pygame.transform.scale(rat_image, (self.cell_size, self.cell_size))
+        for i in range(4):
+            self.bot_images[f"bot{i+1}"] = bot_image
+            self.rat_images[f"rat{i+1}"] = rat_image
 
-    def read_file(self):
-        with open(self.file_name, 'r') as file:
-            lines = file.readlines()
-        
-        grid_section = False
-        timestep_section = False
-        for line in lines:
-            line = line.strip()
-            if line.startswith("Grid Size:"):
-                self.grid_size = tuple(map(int, line.split(":")[1].strip().split("x")))
-            elif line.startswith("Initial Bot Location:"):
-                self.bot_position = tuple(map(int, line.split(":")[1].strip().strip("()").split(", ")))
-            elif line.startswith("Rat Location:"):
-                self.rat_position = tuple(map(int, line.split(":")[1].strip().strip("()").split(", ")))
-            elif line.startswith("Timestep:"):
-                timestep_section = True
-                grid_section = False
-                self.timesteps.append([])
-            elif line.startswith("----------------------------------------"):
-                timestep_section = False
-            elif timestep_section:
-                self.timesteps[-1].append(line.split(" "))
-            elif line and not grid_section and not timestep_section:
-                grid_section = True
+    def parse_files(self):
+        for file_name, bot_name in self.file_data:
+            with open(file_name, "r") as file:
+                content = file.read().split("-" * 40)
+                timesteps = []
+                for step in content[1:]:
+                    if step.strip():
+                        lines = step.strip().split("\n")
+                        grid_lines = lines[1:-3]
+                        bot_info = lines[-2].split(": ")[1].strip("()").split(", ")
+                        rat_info = lines[-1].split(": ")[1].strip("()").split(", ")
+                        timesteps.append({
+                            "grid": grid_lines,
+                            "bot_pos": (int(bot_info[0]), int(bot_info[1])),
+                            "rat_pos": (int(rat_info[0]), int(rat_info[1]))
+                        })
+                self.timesteps.append(timesteps)
 
-        # Initialize the grid with the first timestep
-        if self.timesteps:
-            self.grid = self.timesteps[0]
-
-    def draw_grid(self, screen):
+    def draw_grid(self, grid_data, offset_x, offset_y):
         for row in range(self.grid_size[0]):
             for col in range(self.grid_size[1]):
-                x = col * (self.cell_size + self.margin) + self.margin
-                y = row * (self.cell_size + self.margin) + self.margin
-                
-                # Determine the color for each cell
-                if (row, col) == self.bot_position:
-                    color = (255, 0, 0)  # Red for bot
-                elif (row, col) == self.rat_position:
-                    color = (0, 255, 0)  # Green for rat
-                elif self.grid[row][col] == "o":
-                    if self.bot_start_found and (row, col) == self.bot_position:
-                        color = (0, 0, 255)  # Blue for bot's start location
-                    else:
-                        color = (255, 255, 255)  # White for open cells
+                cell_value = grid_data["grid"][row][col]
+                if cell_value == 'o':
+                    color = WHITE  # Open space
+                elif cell_value == 'b':
+                    color = BLACK  # Blocked
                 else:
-                    color = (0, 0, 0)  # Black for closed cells
-                
-                # Draw the rectangle
-                pygame.draw.rect(screen, color, (x, y, self.cell_size, self.cell_size))
+                    color = WHITE
+                pygame.draw.rect(
+                    self.screen, 
+                    color, 
+                    pygame.Rect(
+                        offset_x + col * self.cell_size,
+                        offset_y + row * self.cell_size,
+                        self.cell_size, self.cell_size
+                    )
+                )
+                pygame.draw.rect(
+                    self.screen, BLACK,
+                    pygame.Rect(
+                        offset_x + col * self.cell_size,
+                        offset_y + row * self.cell_size,
+                        self.cell_size, self.cell_size), 1)
 
-    def update_grid(self, timestep_index):
-        if timestep_index < len(self.timesteps):
-            self.grid = self.timesteps[timestep_index]
-            if not self.bot_start_found and self.bot_position != (0, 0):
-                self.bot_start_found = True
+        # Draw bot and rat
+        bot_x, bot_y = grid_data["bot_pos"]
+        rat_x, rat_y = grid_data["rat_pos"]
+        self.screen.blit(
+            self.bot_images["bot1"], 
+            (offset_x + bot_y * self.cell_size, offset_y + bot_x * self.cell_size))
+        self.screen.blit(
+            self.rat_images["rat1"], 
+            (offset_x + rat_y * self.cell_size, offset_y + rat_x * self.cell_size))
+
+    def draw_separators(self):
+        """Draw lines to separate the grids."""
+        mid_x = self.grid_size[0] * self.cell_size
+        mid_y = self.grid_size[1] * self.cell_size
+
+        # Vertical line in the center
+        pygame.draw.line(self.screen, BLUE, (mid_x, 0), (mid_x, self.screen_size[1]), 2)
+
+        # Horizontal line in the center
+        pygame.draw.line(self.screen, BLUE, (0, mid_y), (self.screen_size[0], mid_y), 2)
 
     def run(self):
-        pygame.init()
-        screen_width = self.grid_size[1] * (self.cell_size + self.margin) + self.margin
-        screen_height = self.grid_size[0] * (self.cell_size + self.margin) + self.margin
-        screen = pygame.display.set_mode((screen_width, screen_height))
-        pygame.display.set_caption(self.window_title)
-
-        clock = pygame.time.Clock()
-        timestep_index = 0
-
-        running = True
-        while running:
+        max_timesteps = max(len(steps) for steps in self.timesteps)
+        while self.running and self.current_timestep < max_timesteps:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
-            
-            # Update the grid for the current timestep
-            self.update_grid(timestep_index)
+                    self.running = False
 
-            # Draw the grid
-            screen.fill((128, 128, 128))  # Background color
-            self.draw_grid(screen)
+            self.screen.fill(WHITE)  # Clear screen
+            for i, bot_timesteps in enumerate(self.timesteps):
+                grid_offset_x = (i % 2) * self.grid_size[0] * self.cell_size
+                grid_offset_y = (i // 2) * self.grid_size[1] * self.cell_size
+                
+                # Handle bots with fewer timesteps
+                if self.current_timestep < len(bot_timesteps):
+                    grid_data = bot_timesteps[self.current_timestep]
+                else:
+                    # Freeze at the last state
+                    grid_data = bot_timesteps[-1]
+                
+                self.draw_grid(grid_data, grid_offset_x, grid_offset_y)
 
-            pygame.display.flip()
-            clock.tick(1)  # 1 FPS to simulate timestep changes
-            timestep_index = (timestep_index + 1) % len(self.timesteps)
+            # Draw separators
+            self.draw_separators()
 
+            pygame.display.update()
+            sleep(0.5)  # Synchronize timestep progression
+            self.current_timestep += 1
+
+        sleep(2)
         pygame.quit()
         sys.exit()
-
